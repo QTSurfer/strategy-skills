@@ -1,0 +1,31 @@
+{
+  "name": "strategy-skills",
+  "id": "strategy-skills",
+  "owner": {
+    "name": "QTSurfer"
+  },
+  "metadata": {
+    "description": "AI agent skills for writing QTSurfer trading strategies",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "qtsurfer-java-strategy",
+      "source": "./skills/qtsurfer-java-strategy",
+      "description": "Write, review, and debug QTSurfer Java trading strategies — AbstractTickerStrategy, indicator builder, window listeners, state management, and advanced patterns",
+      "version": "1.0.0",
+      "author": {
+        "name": "QTSurfer"
+      },
+      "keywords": [
+        "trading",
+        "strategy",
+        "java",
+        "backtesting",
+        "qtsurfer",
+        "indicators"
+      ],
+      "category": "workflow"
+    }
+  ]
+}
