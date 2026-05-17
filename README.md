@@ -25,7 +25,7 @@ npx skills add QTSurfer/strategy-skills --skill qtsurfer-java-strategy
 claude plugin marketplace add QTSurfer/strategy-skills
 
 # 2. Install the skill you want
-claude plugin install qtsurfer-java-strategy@strategy-skills
+claude plugin install qtsurfer-java-strategy@qtsurfer-strategy-skills
 ```
 
 ## Available Skills
