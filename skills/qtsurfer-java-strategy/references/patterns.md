@@ -2,7 +2,7 @@
 
 Proven patterns extracted from production and backtested legacy strategies.
 
-## Noise filtering chain (ScalpingV2)
+## Noise filtering chain
 
 The most sophisticated signal processing pattern in the codebase. Converts a raw indicator into a clean, smoothed signal:
 
@@ -28,7 +28,7 @@ indicators
 
 ---
 
-## EMA distance analysis (ScalpingV2)
+## EMA distance analysis
 
 Use the **distance between EMAs** as the primary signal instead of raw EMA values. Distance is a derivative — it measures momentum of the trend, not the trend itself.
 
@@ -48,7 +48,7 @@ indicators
 
 ## Trailing exit variants
 
-### Midpoint trailing (LongExternalStrategy — production proven, ~7% avg)
+### Midpoint trailing (production proven, ~7% avg)
 
 ```java
 // In onChange:
@@ -62,7 +62,7 @@ if (percentGain > minPercentGain && percentGain <= trigger) {
 
 Sells when gain retraces to the midpoint between the minimum threshold and the peak gain. Self-calibrates to the magnitude of the move.
 
-### Peak trailing (ScalpingV2)
+### Peak trailing
 
 ```java
 // In onChange:
@@ -73,7 +73,7 @@ if (fallFromPeak >= 1.0) emitSell(price); // 1% drop from peak
 
 Simpler. Good for faster-moving scalps.
 
-### EMA gain reset (LongExternalStrategy, ScalpingV1)
+### EMA gain reset
 
 ```java
 // In onChange:
@@ -84,7 +84,7 @@ Sell when the exit EMA stops rising (momentum exhausted). Requires a `GainRTIndi
 
 ---
 
-## Conditional stop-loss (ScalpingV2)
+## Conditional stop-loss
 
 A macro-aware stop-loss that avoids stopping out during healthy dips:
 
@@ -103,7 +103,7 @@ Only triggers when the macro context is also weak. Reduces false stops in volati
 
 ---
 
-## Re-entry protection ("fail" state — ScalpingV2)
+## Re-entry protection ("fail" state)
 
 Block new entries after a losing trade until the macro context fully resets:
 
@@ -122,7 +122,7 @@ Prevents revenge trading after a stop-loss. The reset condition (`longEma < vlon
 
 ---
 
-## OPS-based instrument activity (PumpStrategy)
+## OPS-based instrument activity
 
 Track operations/second per instrument to identify dormant coins waking up:
 
@@ -143,15 +143,15 @@ if (now - lastOpsWindow > 1000) {
 
 ---
 
-## Multi-stage entry filter (PumpV4, ScalpingV1, ScalpingV2)
+## Multi-stage entry filter 
 
 All production-tested strategies use 2–3 independent confirmation stages before entry:
 
 | Strategy | Stage 1 | Stage 2 | Stage 3 |
 |----------|---------|---------|---------|
-| PumpV4 | BB bandwidth in [0.5, 0.6] | Price above EMA500 | — |
-| ScalpingV1 | EMA gain streak >= 3 | Price above EMA200 | Volatility >= 50% |
-| ScalpingV2 | VlongEMA streak >= 300 | Distance rising for 10+ ticks | Distance >= 0.35% |
+| S1 | BB bandwidth in [0.5, 0.6] | Price above EMA500 | — |
+| S2 | EMA gain streak >= 3 | Price above EMA200 | Volatility >= 50% |
+| S3 | VlongEMA streak >= 300 | Distance rising for 10+ ticks | Distance >= 0.35% |
 
 **Rule of thumb:** At least one momentum condition + one macro trend condition + one noise/false-positive guard.
 
@@ -175,7 +175,7 @@ indicators
 
 ---
 
-## Volatility gate (ScalpingV1)
+## Volatility gate
 
 Prevent entries during low-activity periods:
 
