@@ -23,15 +23,15 @@ public class MyStrategy extends AbstractTickerStrategy {
 }
 ```
 
-`acceptCurrencyPair` and `getExecutionMode` have sensible defaults (accept all pairs, LONG mode). Override only when needed:
+`acceptInstrument` and `getExecutionMode` have sensible defaults (accept all instruments, LONG mode). Override only when needed:
 
 ```java
-import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.instrument.Instrument;
+import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.strategy.execution.ExecutionMode;
 
 @Override
-public boolean acceptCurrencyPair(CurrencyPair currencyPair) {
-    return true; // filter pairs here if needed
+public boolean acceptInstrument(Instrument instrument) {
+    return instrument.base().equals("BTC"); // filter instruments here if needed
 }
 
 @Override
@@ -67,13 +67,13 @@ Custom: `Duration.ofSeconds(n)` or `Duration.ofMinutes(n)`
 ### Reading indicator values outside a listener
 
 ```java
-import org.knowm.xchange.dto.marketdata.Ticker;
-import org.knowm.xchange.instrument.Instrument;
+import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.core.Ticker;
 
 @Override
 public void update(Ticker ticker) {
-    Instrument instrument = ticker.getInstrument();
-    updateInstrument(instrument, ticker.getTimestamp().getTime());
+    Instrument instrument = ticker.instrument();
+    updateInstrument(instrument, ticker.timestamp());
     var ind = updateIndicators(instrument, ticker);
 
     if (!ind.getExisting("emaSlow").isReady()) return; // wait for warmup
@@ -81,10 +81,12 @@ public void update(Ticker ticker) {
     double fast = ind.getValue("emaFast");
     double slow = ind.getValue("emaSlow");
 
-    if (fast > slow) emitBuy(ticker.getLast());
-    else             emitSell(ticker.getLast());
+    if (fast > slow) emitBuy(ticker.last());
+    else             emitSell(ticker.last());
 }
 ```
+
+`Ticker` is an engine record — use accessor methods (`ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`) rather than JavaBean getters.
 
 ## Window listener pattern (recommended)
 
@@ -199,6 +201,7 @@ The engine compiles the strategy server-side — only the `.java` source is sent
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
 - **Inner class vs lambda for listeners** — `AbstractOnChangeListener` gives access to helpers; prefer inner class over raw lambda.
 - **Hidden indicators** — prefix with `_` (e.g. `_gain`) to exclude from signal reporting metadata.
+- **Using JavaBean getters on Ticker** — `Ticker` is a record; use `ticker.last()` not `ticker.getLast()`, `ticker.instrument()` not `ticker.getInstrument()`, `ticker.timestamp()` not `ticker.getTimestamp().getTime()`.
 
 ## ⚠ Classloader boundary — critical constraint
 

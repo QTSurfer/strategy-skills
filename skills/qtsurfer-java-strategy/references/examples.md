@@ -5,10 +5,10 @@
 Buy when fast EMA crosses above slow EMA; sell on cross below.
 
 ```java
+import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.core.Ticker;
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
-import org.knowm.xchange.dto.marketdata.Ticker;
-import org.knowm.xchange.instrument.Instrument;
 
 public class EmaCrossoverStrategy extends AbstractTickerStrategy {
 
@@ -21,8 +21,8 @@ public class EmaCrossoverStrategy extends AbstractTickerStrategy {
 
     @Override
     public void update(Ticker ticker) {
-        Instrument inst = ticker.getInstrument();
-        updateInstrument(inst, ticker.getTimestamp().getTime());
+        Instrument inst = ticker.instrument();
+        updateInstrument(inst, ticker.timestamp());
         var ind = updateIndicators(inst, ticker);
 
         if (!ind.getExisting("slow").isReady()) return;
@@ -30,8 +30,8 @@ public class EmaCrossoverStrategy extends AbstractTickerStrategy {
         boolean currentFastAbove = ind.getValue("fast") > ind.getValue("slow");
         if (fastAboveSlow == null) { fastAboveSlow = currentFastAbove; return; }
 
-        if (currentFastAbove && !fastAboveSlow)  emitBuy(ticker.getLast());
-        if (!currentFastAbove && fastAboveSlow)  emitSell(ticker.getLast());
+        if (currentFastAbove && !fastAboveSlow)  emitBuy(ticker.last());
+        if (!currentFastAbove && fastAboveSlow)  emitSell(ticker.last());
         fastAboveSlow = currentFastAbove;
     }
 }
