@@ -130,6 +130,75 @@ indicators.getReadOnly("ema9").ifPresent(src ->
 
 `.ro()` is a default method on `RTIndicator` itself — available on every indicator instance without going through the group. Use it when you already hold a reference to the indicator object.
 
+## Advanced indicator catalogue (statistics & pro)
+
+Beyond the fluent builder methods above, the engine ships ~180 indicator classes under
+`com.wualabs.qtsurfer.engine.indicators.{averages, bollinger, statistics, statistics.pro, pro}`.
+They are plain `RTIndicator` instances — add any of them by class with
+`.add("name", new XxxRTIndicator(...))`, then read with `indicators.getValue("name")`:
+
+```java
+import com.wualabs.qtsurfer.engine.indicators.statistics.StandardDeviationRTIndicator;
+import com.wualabs.qtsurfer.engine.indicators.statistics.pro.ZScoreRTIndicator;
+
+indicators
+    .addPrice()                                                      // "price"
+    .sma("mean", 20)
+    .add("std",    new StandardDeviationRTIndicator(20))             // ctor (int periods)
+    .add("stdOf",  new StandardDeviationRTIndicator(                 // ctor (RTIndicator, int periods)
+            indicators.getReadOnlyExisting("mean"), 20))
+    .add("zscore", new ZScoreRTIndicator(/* see class for ctor */));
+```
+
+Constructors vary per class — most take `(int periods)` and/or `(RTIndicator source, int periods)`;
+some (lombok-built) differ, so check the class. Useful classes by category:
+
+| Category | `*RTIndicator` classes |
+|---|---|
+| Moving averages | `Sma`, `Ema`, `Wma`, `Hma`, `Kama`, `Tema`, `Mma` |
+| Statistics | `StandardDeviation`, `Variance`, `ZScore`, `Skewness`, `Kurtosis`, `RollingPercentile`, `Correlation`, `Covariance`, `Beta` |
+| Regression / trend | `LinearRegressionSlope`, `SimpleLinearRegression`, `Adx`, `Aroon`, `SuperTrend`, `ParabolicSar`, `Ichimoku` |
+| Volatility | `Atr`, `Natr`, `PercentVolatility`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
+| Volume | `Vwap`, `Obv`, `Mfi`, `Cmf`, `Adl`, `ElderForceIndex` |
+| Oscillators | `Macd`, `StochasticOscillator`, `StochasticRsi`, `Cci`, `Roc`, `Momentum`, `WilliamsR`, `UltimateOscillator` |
+| Ratios (performance) | `SharpeRatio`, `SortinoRatio`, `CalmarRatio`, `MaxDrawdown`, `OmegaRatio`, `UlcerIndex` |
+
+Compose them by feeding one indicator's read-only view into another's `(RTIndicator, …)` constructor
+(e.g. a `ZScore` of an `Sma`). This is how to do rolling stats / aggregation **without
+reinventing the wheel** in `update()`.
+
+## Writing a custom RTIndicator
+
+When no built-in fits, implement the `RTIndicator` interface
+(`com.wualabs.qtsurfer.engine.indicators.core.RTIndicator`) — or extend `AbstractRTIndicator`
+for the common scaffolding:
+
+```java
+import com.wualabs.qtsurfer.engine.indicators.core.RTIndicator;
+
+public class MyIndicator implements RTIndicator {
+    private double value;
+    private boolean ready;
+
+    @Override public double getValue() { return value; }
+
+    @Override public double update(double newValue) {     // called once per tick with the source value
+        this.value = /* compute incrementally from newValue */ newValue;
+        this.ready = true;
+        return value;
+    }
+
+    @Override public boolean isReady() { return ready; }  // gate warmup (default true)
+
+    @Override public void reset() { value = 0; ready = false; }  // from Resettable
+}
+```
+
+Register it like any built-in: `indicators.add("myInd", new MyIndicator())`. The interface is
+small: `getValue()` (current output), `update(double)` (incremental, per tick), `isReady()`
+(warmup gate, default `true`), `reset()`. `update(Number)` / `update(RTIndicator)` and `ro()`
+(read-only view) come as default methods for free.
+
 ## Hidden indicators
 
 Prefix with `_` to exclude from signal reporting metadata:
