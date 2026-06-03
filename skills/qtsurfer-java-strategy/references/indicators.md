@@ -199,6 +199,33 @@ small: `getValue()` (current output), `update(double)` (incremental, per tick), 
 (warmup gate, default `true`), `reset()`. `update(Number)` / `update(RTIndicator)` and `ro()`
 (read-only view) come as default methods for free.
 
+### Rich indicators (full snapshot access)
+
+Scalar indicators receive a single `double` (one field, extracted via `TickerValueSource`).
+When an indicator needs **more than one field** — OHLC for ATR, volume+price for VWAP/OBV,
+bid/ask for microstructure — implement `RichRTIndicator<T extends MarketSnapshot>` instead and
+read the whole snapshot:
+
+```java
+import com.wualabs.qtsurfer.engine.indicators.core.RichRTIndicator;
+import com.wualabs.qtsurfer.engine.core.MarketSnapshot;
+
+public class MyOhlcIndicator implements RichRTIndicator<MarketSnapshot> {
+    private double value;
+    @Override public double updateFrom(MarketSnapshot snap) {  // full snapshot: O/H/L/C/V, bid/ask
+        this.value = /* combine several fields */ 0;
+        return value;
+    }
+    @Override public double getValue() { return value; }
+    @Override public double update(double v) { return value; }  // scalar path unused
+    @Override public void reset() { value = 0; }
+}
+```
+
+The engine builds the snapshot once per tick and dispatches it to every registered
+`RichRTIndicator`, while scalar indicators keep receiving their extracted field. Register it the
+same way: `indicators.add("myOhlc", new MyOhlcIndicator())`.
+
 ## Hidden indicators
 
 Prefix with `_` to exclude from signal reporting metadata:
