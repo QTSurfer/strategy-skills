@@ -40,6 +40,10 @@ public ExecutionMode getExecutionMode(Instrument instrument) {
 }
 ```
 
+> Note: the **default** `acceptInstrument` is *not* unconditional — it gates on the strategy's
+> output currency / `acceptCurrency`. To accept **every** instrument unconditionally, override it
+> explicitly with `return true`.
+
 ## Indicator setup
 
 All indicators are defined in `setupIndicators` using the fluent builder on `InstrumentGroupRTIndicator`. Methods return `this` for chaining.
@@ -168,6 +172,22 @@ Properties are injected before `setupIndicators` is called.
 | `emitSell(price)` | Enter short / close long |
 | `emitSignal(signal)` | Custom signal (`BuySignal`, `SellSignal`, `InfoStrategySignal`) |
 
+### Data / analytics signals — `InfoStrategySignal`
+
+For non-trading strategies that emit **computed fields** (analytics, metrics) rather than
+buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`:
+
+```java
+InfoStrategySignal signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
+signal.set("interval", "1m");
+signal.set("zscore", z);
+signal.set("vwap", vwap);
+emitSignal(signal);
+```
+
+Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
+`signal.getInstrument()`. Prefix a field's name with `_` to keep it out of reporting metadata.
+
 ## Crossover detection helper
 
 ```java
@@ -177,6 +197,26 @@ private Boolean[] crossState = new Boolean[1]; // one slot per crossover
 if (detectCrossAbove(crossState, 0, fast, slow)) emitBuy(price);
 if (detectCrossBelow(crossState, 0, fast, slow)) emitSell(price);
 ```
+
+## Building a Ticker in tests
+
+`engine.core.Ticker` is a **14-field record** — construct it directly (there is no builder):
+
+```java
+import com.wualabs.qtsurfer.engine.core.Ticker;
+import com.wualabs.qtsurfer.engine.core.Instrument;
+
+new Ticker(
+    new Instrument("BTC", "USDT"),       // instrument (base, quote[, settle])
+    bid, bidSize, ask, askSize,          // BigDecimal (nullable)
+    open, high, low, last, vwap,         // BigDecimal (nullable)
+    volume, quoteVolume, percentageChange, // BigDecimal (nullable)
+    epochMillis);                        // long — epoch MILLISECONDS
+```
+
+Field order: `instrument, bid, bidSize, ask, askSize, open, high, low, last, vwap, volume,
+quoteVolume, percentageChange, timestamp`. `Instrument` is also a record:
+`new Instrument(base, quote)` (spot) or `new Instrument(base, quote, settle)` (derivative).
 
 ## Compile & submit via MCP
 
@@ -193,6 +233,37 @@ The engine compiles the strategy server-side — only the `.java` source is sent
 **`AbstractTickerStrategy`** — processes real-time tickers (bid/ask/last, volume). This is the current primary strategy type.
 
 **`AbstractMultiStrategy`** _(coming soon)_ — will support multiple data sources in a single strategy: Tickers + KLines + FundingRates. Do not attempt to implement multi-source strategies with the current API.
+
+## Cross-instrument (market-wide) strategies
+
+A strategy instance sees **every** accepted instrument, each with its own indicator group. To
+compute something *across* instruments (a market-wide percentile, a relative-strength rank, a
+basket signal), override `update(Ticker)`, call `super.update(ticker)` first so the engine
+advances the firing instrument's indicators, then read any instrument's indicators:
+
+```java
+@Override
+public void update(Ticker ticker) {
+    super.update(ticker);                       // engine updates THIS instrument's group
+    Instrument ins = ticker.instrument();
+
+    double z = getRTIndicator(ins, "closeZScore")     // this instrument's own indicator
+        .map(RTIndicator::getValue).orElse(Double.NaN);
+
+    List<Double> prices = new ArrayList<>();          // read across all tracked instruments
+    for (Instrument other : getInstruments()) {
+        getRTIndicator(other, "price")
+            .filter(RTIndicator::isReady)
+            .ifPresent(ind -> prices.add(ind.getValue()));
+    }
+    // ... compute a market-wide stat from `prices`, then emitSignal(...)
+}
+```
+
+Helpers on `AbstractTickerStrategy`:
+- `getInstruments()` — the set of instruments the strategy is tracking.
+- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator (read-only, no re-update).
+- Always call `super.update(ticker)` **first** — skip it and the indicators never advance.
 
 ## Common mistakes
 
