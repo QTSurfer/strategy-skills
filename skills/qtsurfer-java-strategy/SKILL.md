@@ -218,6 +218,29 @@ Field order: `instrument, bid, bidSize, ask, askSize, open, high, low, last, vwa
 quoteVolume, percentageChange, timestamp`. `Instrument` is also a record:
 `new Instrument(base, quote)` (spot) or `new Instrument(base, quote, settle)` (derivative).
 
+### Replaying recorded data: event-time vs wall clock
+
+Window listeners fire on **bar close**, and by default the engine advances its time
+windows on the **wall clock**. That's correct live — ticks arrive in real time, so a 1m
+window closes a minute after it opened. But when you replay recorded tickers through
+`strategy.update(ticker)` in a test, an hour of history streams through in milliseconds and
+**no window boundary is ever crossed** — so no window listener fires and you get zero
+signals, even though the data is fine.
+
+Drive the windows off the **ticker timestamps** (event-time) for replay:
+
+```java
+MyStrategy strategy = new MyStrategy();
+strategy.setBacktestEnabled(true);   // windows advance by ticker.timestamp(), not the wall clock
+// ... feed the recorded, timestamp-sorted tickers ...
+for (Ticker t : recorded) strategy.update(t);
+```
+
+Leave it **off** for live (real-time) runs. This only affects window / bar-close emission;
+per-tick `update()` logic and indicator warmup are unaffected either way. (A backtest run via
+the MCP `submit_backtest` flow already replays in event-time — this matters only when you feed
+the strategy yourself in a JUnit-style harness.)
+
 ## Compile & submit via MCP
 
 Download the MCP server from [QTSurfer/mcp-java releases](https://github.com/QTSurfer/mcp-java/releases/latest) (native binary or fat JAR) and configure it in your agent. Once connected:
