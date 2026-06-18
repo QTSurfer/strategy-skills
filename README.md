@@ -84,8 +84,12 @@ Submit this strategy to backtest on binance BTC/USDT from 2026-05-01 to 2026-05-
 
 Each skill follows the [Agent Skills Open Standard](https://agentskills.io/):
 
-- `SKILL.md` — skill manifest with frontmatter (name, description) and instructions
+- `SKILL.md` — skill manifest with frontmatter (name, description, `metadata.version`) and instructions
 - `references/` — supporting reference files (indicator catalogue, examples, patterns)
+
+Versions follow [Semantic Versioning](https://semver.org/) and are tracked in
+[`CHANGELOG.md`](./CHANGELOG.md). See [CONTRIBUTING.md](./CONTRIBUTING.md) to
+propose changes.
 
 ## Roadmap
 

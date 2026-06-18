@@ -1,0 +1,29 @@
+name: ✨ Content request / new skill
+description: Suggest a new pattern, example, reference section, or a whole new skill.
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you proposing?
+      options:
+        - A new example or strategy pattern
+        - A new reference section (indicators, API, …)
+        - A new skill (e.g. qtsurfer-ts-strategy, qtsurfer-multi-strategy)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should it cover, and what problem does it solve for someone writing strategies?
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: API / examples
+      description: Any relevant engine API, sample code, or links that would seed the content.
+    validations:
+      required: false

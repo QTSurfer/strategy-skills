@@ -1,0 +1,40 @@
+name: 🐛 Skill issue
+description: An example doesn't compile, guidance is wrong, or a reference is inaccurate.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. This is for problems with the **skill content** (examples, patterns, indicator catalogue, guidance). For problems running the MCP server, use the [mcp-java](https://github.com/QTSurfer/mcp-java) repo.
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Which skill?
+      options:
+        - qtsurfer-java-strategy
+        - Not sure / repo-wide
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Where?
+      description: File and section, e.g. `references/examples.md` → "Bollinger Band Mean Reversion".
+      placeholder: references/examples.md → "..."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong?
+      description: What does the skill say, and what should it say? If a strategy fails to compile, paste the compiler / MCP error.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Skill version
+      description: The `metadata.version` in `SKILL.md` (or "latest from main").
+      placeholder: "1.0.1"
+    validations:
+      required: false

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 QTSurfer docs
+    url: https://qtsurfer.com
+    about: Documentation for the QTSurfer platform.
+  - name: 🔌 MCP server (mcp-java)
+    url: https://github.com/QTSurfer/mcp-java
+    about: Issues about installing, authenticating, or running the MCP server belong here.
