@@ -175,7 +175,7 @@ Strategy parameters configurable at submission time via `@StrategyProperty`.
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
-import com.wualabs.qtsurfer.engine.strategy.annotation.StrategyProperty;
+import com.wualabs.qtsurfer.engine.strategy.StrategyProperty;
 import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
 
 import java.time.Duration;

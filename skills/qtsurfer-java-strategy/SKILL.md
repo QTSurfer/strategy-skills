@@ -2,6 +2,8 @@
 name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies. Covers AbstractTickerStrategy, the indicator builder API, window listeners, state management, signal emission, and submission via the MCP server or SDK.
 license: Apache-2.0
+metadata:
+  version: 1.0.1
 ---
 
 # QTSurfer Java Strategy
