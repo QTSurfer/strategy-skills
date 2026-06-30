@@ -1,14 +1,22 @@
 ---
 name: qtsurfer-java-strategy
-description: Write, review, and debug QTSurfer Java trading strategies. Covers AbstractTickerStrategy, the indicator builder API, window listeners, state management, signal emission, and submission via the MCP server or SDK.
+description: >-
+  Write, review, and debug QTSurfer Java trading strategies using
+  AbstractTickerStrategy, its indicator-builder API, window listeners,
+  state management, and signal emission. The trigger branches are:
+  - write a QTSurfer strategy (template, indicators, listeners)
+  - review or debug a strategy (common mistakes, cross-instrument patterns)
+  - configure properties or submit via MCP
 license: Apache-2.0
 metadata:
-  version: 1.0.1
+  version: 1.0.2
 ---
 
 # QTSurfer Java Strategy
 
-A QTSurfer strategy is a plain Java class (no framework annotations required) that extends `AbstractTickerStrategy`. It receives real-time tickers, configures technical indicators, and emits buy/sell signals. The engine compiles strategies server-side — no local toolchain needed.
+A QTSurfer strategy is a plain Java class extending `AbstractTickerStrategy`. It receives
+real-time tickers, configures technical indicators via a **fluent builder**, and emits
+buy/sell signals. The engine compiles strategies server-side — no local toolchain needed.
 
 ## Minimal template
 
@@ -17,7 +25,6 @@ import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTInd
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
 
 public class MyStrategy extends AbstractTickerStrategy {
-
     @Override
     protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
         // configure indicators here — called once per instrument on first tick
@@ -25,15 +32,12 @@ public class MyStrategy extends AbstractTickerStrategy {
 }
 ```
 
-`acceptInstrument` and `getExecutionMode` have sensible defaults (accept all instruments, LONG mode). Override only when needed:
+Override `acceptInstrument` and `getExecutionMode` only when the defaults don't fit:
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Instrument;
-import com.wualabs.qtsurfer.engine.strategy.execution.ExecutionMode;
-
 @Override
 public boolean acceptInstrument(Instrument instrument) {
-    return instrument.base().equals("BTC"); // filter instruments here if needed
+    return instrument.base().equals("BTC");
 }
 
 @Override
@@ -42,116 +46,89 @@ public ExecutionMode getExecutionMode(Instrument instrument) {
 }
 ```
 
-> Note: the **default** `acceptInstrument` is *not* unconditional — it gates on the strategy's
-> output currency / `acceptCurrency`. To accept **every** instrument unconditionally, override it
-> explicitly with `return true`.
+> **Gotcha:** the default `acceptInstrument` gates on the strategy's output currency. To accept
+> **every** instrument unconditionally, override it with `return true`.
 
 ## Indicator setup
 
-All indicators are defined in `setupIndicators` using the fluent builder on `InstrumentGroupRTIndicator`. Methods return `this` for chaining.
+All indicators are defined in `setupIndicators` using the fluent builder.
+Methods return `this` for chaining. See [references/indicators.md](references/indicators.md)
+for the full catalogue.
 
 ```java
 @Override
 protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
     indicators
-        .addPrice()                     // source: close price
-        .ema("emaFast", 9)             // 9-period EMA named "emaFast"
-        .ema("emaSlow", 21)            // 21-period EMA named "emaSlow"
-        .rsi(14)                        // 14-period RSI named "rsi14"
-        .bollinger("bb", 20, 2.0)      // Bollinger Bands → "bb", "bbUpper", "bbLower"
+        .addPrice()
+        .ema("emaFast", 9)
+        .ema("emaSlow", 21)
+        .rsi(14)
+        .bollinger("bb", 20, 2.0)
         .window("emaFast", WindowTime.s1, new MyListener(this, indicators));
 }
 ```
 
-See [references/indicators.md](references/indicators.md) for the full indicator catalogue.
+**WindowTime values:** `s1`, `s5`, `s10`, `s30`, `m1`, `m3`, `m5`
+or `Duration.ofSeconds(n)` / `Duration.ofMinutes(n)`.
 
-### WindowTime values
-
-`WindowTime.s1`, `s5`, `s10`, `s30`, `m1`, `m3`, `m5`  
-Custom: `Duration.ofSeconds(n)` or `Duration.ofMinutes(n)`
-
-### Reading indicator values outside a listener
+### Reading indicators outside a listener
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Instrument;
-import com.wualabs.qtsurfer.engine.core.Ticker;
-
 @Override
 public void update(Ticker ticker) {
-    Instrument instrument = ticker.instrument();
-    updateInstrument(instrument, ticker.timestamp());
-    var ind = updateIndicators(instrument, ticker);
+    updateInstrument(ticker.instrument(), ticker.timestamp());
+    var ind = updateIndicators(ticker.instrument(), ticker);
 
-    if (!ind.getExisting("emaSlow").isReady()) return; // wait for warmup
+    if (!ind.getExisting("emaSlow").isReady()) return;
 
     double fast = ind.getValue("emaFast");
     double slow = ind.getValue("emaSlow");
-
     if (fast > slow) emitBuy(ticker.last());
     else             emitSell(ticker.last());
 }
 ```
 
-`Ticker` is an engine record — use accessor methods (`ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`) rather than JavaBean getters.
+> `Ticker` is a record — use accessor methods (`ticker.last()`, `ticker.bid()`,
+> `ticker.instrument()`) rather than JavaBean getters.
 
 ## Window listener pattern (recommended)
 
-Listeners fire once per time window rather than on every tick. Prefer this over `update()` for strategies that react to bar closes.
+Listeners fire once per time window rather than on every tick. Prefer over raw `update()`.
 
 ```java
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
-import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
-
-public class MyStrategy extends AbstractTickerStrategy {
-
-    @Override
-    protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
-        indicators
-            .addPrice()
-            .rsi(14)
-            .window("rsi14", WindowTime.m1, new SignalListener(this, indicators));
+private class SignalListener extends AbstractOnChangeListener {
+    public SignalListener(AbstractTickerStrategy strategy,
+                          InstrumentGroupRTIndicator indicators) {
+        super(strategy, indicators);
     }
 
-    private class SignalListener extends AbstractOnChangeListener {
-
-        public SignalListener(AbstractTickerStrategy strategy,
-                              InstrumentGroupRTIndicator indicators) {
-            super(strategy, indicators);
-        }
-
-        @Override
-        public void onChange(StateStoreSupport store, double prev, double actual) {
-            initStore(store);                  // lazy-init this.store
-            long count = this.store.inc("bars");
-
-            if (actual < 30) emitBuy(indicators.getValue("price"));
-            if (actual > 70) emitSell(indicators.getValue("price"));
-        }
+    @Override
+    public void onChange(StateStoreSupport store, double prev, double actual) {
+        initStore(store);
+        if (actual < 30) emitBuy(indicators.getValue("price"));
+        if (actual > 70) emitSell(indicators.getValue("price"));
     }
 }
 ```
 
-`AbstractOnChangeListener` gives you:
+Helpers on `AbstractOnChangeListener`:
 - `emitBuy(price)` / `emitSell(price)` / `emitSignal(signal)`
 - `detectCrossAbove(state, idx, left, right)` / `detectCrossBelow(...)`
-- `initStore(storeSupport)` → initialises `this.store` (call at top of `onChange`)
-- `this.instrument` — current instrument
-- `this.indicators` — indicator group
+- `initStore(storeSupport)` — call at top of `onChange` to initialise `this.store`
 
 ## State management
 
-`StateStore` is per-instrument, lazily initialised. Access via `initStore(storeSupport)` inside a listener, or `getStateStore(instrument)` inside `update()`.
+`StateStore` is per-instrument, lazily initialised.
 
 ```java
-this.store.inc("count")          // int counter, returns new value
-this.store.dec("count")
-this.store.set("inPosition")     // boolean flag → true
-this.store.unset("inPosition")   // → false
-this.store.is("inPosition")      // read boolean
-this.store.add("pnl", delta)     // double accumulator, returns new value
-this.store.setState("key", obj)  // arbitrary object
-this.store.getState("key", def)  // with default
+store.inc("count")            // int counter, returns new value
+store.dec("count")
+store.set("inPosition")       // boolean flag → true
+store.unset("inPosition")     // → false
+store.is("inPosition")        // read boolean
+store.add("pnl", delta)       // double accumulator
+store.setState("key", obj)    // arbitrary object
+store.getState("key", def)    // with default
 ```
 
 ## Configurable properties
@@ -159,120 +136,98 @@ this.store.getState("key", def)  // with default
 ```java
 @StrategyProperty(name = "rsi.period", description = "RSI period", defaultValue = "14")
 private int rsiPeriod = 14;
-
-@StrategyProperty(name = "ema.fast", description = "Fast EMA period", defaultValue = "9")
-private int fastPeriod = 9;
 ```
 
 Properties are injected before `setupIndicators` is called.
 
 ## Signal emission
 
-| Method | When to use |
-|--------|-------------|
-| `emitBuy(price)` | Enter long position |
+| Method | Use |
+|--------|-----|
+| `emitBuy(price)` | Enter long |
 | `emitSell(price)` | Enter short / close long |
-| `emitSignal(signal)` | Custom signal (`BuySignal`, `SellSignal`, `InfoStrategySignal`) |
+| `emitSignal(signal)` | Custom signal |
 
-### Data / analytics signals — `InfoStrategySignal`
-
-For non-trading strategies that emit **computed fields** (analytics, metrics) rather than
-buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`:
+For non-trading strategies (analytics, metrics), build an `InfoStrategySignal`:
 
 ```java
-InfoStrategySignal signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
-signal.set("interval", "1m");
+InfoStrategySignal signal = createInfoStrategySignal(instrument);
 signal.set("zscore", z);
-signal.set("vwap", vwap);
 emitSignal(signal);
 ```
 
-Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
-`signal.getInstrument()`. Prefix a field's name with `_` to keep it out of reporting metadata.
+Subscribers read fields with `signal.get("key")`. Prefix a field with `_`
+to exclude it from reporting metadata.
 
-## Crossover detection helper
+## Crossover detection
 
 ```java
-private Boolean[] crossState = new Boolean[1]; // one slot per crossover
+private Boolean[] crossState = new Boolean[1];
 
-// In onChange or update:
 if (detectCrossAbove(crossState, 0, fast, slow)) emitBuy(price);
 if (detectCrossBelow(crossState, 0, fast, slow)) emitSell(price);
 ```
 
 ## Building a Ticker in tests
 
-`engine.core.Ticker` is a **14-field record** — construct it directly (there is no builder):
+`Ticker` is a 14-field record (no builder):
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Ticker;
-import com.wualabs.qtsurfer.engine.core.Instrument;
-
 new Ticker(
-    new Instrument("BTC", "USDT"),       // instrument (base, quote[, settle])
-    bid, bidSize, ask, askSize,          // BigDecimal (nullable)
-    open, high, low, last, vwap,         // BigDecimal (nullable)
-    volume, quoteVolume, percentageChange, // BigDecimal (nullable)
-    epochMillis);                        // long — epoch MILLISECONDS
+    new Instrument("BTC", "USDT"),
+    bid, bidSize, ask, askSize,
+    open, high, low, last, vwap,
+    volume, quoteVolume, percentageChange,
+    epochMillis);
 ```
 
-Field order: `instrument, bid, bidSize, ask, askSize, open, high, low, last, vwap, volume,
-quoteVolume, percentageChange, timestamp`. `Instrument` is also a record:
-`new Instrument(base, quote)` (spot) or `new Instrument(base, quote, settle)` (derivative).
+`Instrument` is also a record: `new Instrument(base, quote)` or
+`new Instrument(base, quote, settle)` for derivatives.
 
 ## Compile & submit via MCP
 
-Download the MCP server from [QTSurfer/mcp-java releases](https://github.com/QTSurfer/mcp-java/releases/latest) (native binary or fat JAR) and configure it in your agent. Once connected:
+Download the **MCP server** from [QTSurfer/mcp-java releases](https://github.com/QTSurfer/mcp-java/releases/latest)
+(native binary or fat JAR) and configure it in your agent.
 
-1. Use `list_exchanges` → `list_instruments` to pick a valid exchange and instrument.
-2. Call `submit_backtest` with `strategyCode` = the full Java source of your strategy class.
-3. Poll `get_job_status` until `COMPLETED`, then read the results.
+1. `list_exchanges` → `list_instruments` to pick a valid pair.
+2. `submit_backtest` with `strategyCode` = the full Java source.
+3. Poll `get_job_status` until `COMPLETED`.
 
-The engine compiles the strategy server-side — only the `.java` source is sent.
+The engine compiles server-side — only the `.java` source is sent.
 
-## Current scope and roadmap
+## Cross-instrument strategies
 
-**`AbstractTickerStrategy`** — processes real-time tickers (bid/ask/last, volume). This is the current primary strategy type.
-
-**`AbstractMultiStrategy`** _(coming soon)_ — will support multiple data sources in a single strategy: Tickers + KLines + FundingRates. Do not attempt to implement multi-source strategies with the current API.
-
-## Cross-instrument (market-wide) strategies
-
-A strategy instance sees **every** accepted instrument, each with its own indicator group. To
-compute something *across* instruments (a market-wide percentile, a relative-strength rank, a
-basket signal), override `update(Ticker)`, call `super.update(ticker)` first so the engine
-advances the firing instrument's indicators, then read any instrument's indicators:
+To compute across instruments (market-wide percentile, relative-strength rank), override
+`update(Ticker)`, call `super.update(ticker)` first, then read any instrument's indicators:
 
 ```java
 @Override
 public void update(Ticker ticker) {
-    super.update(ticker);                       // engine updates THIS instrument's group
-    Instrument ins = ticker.instrument();
-
-    double z = getRTIndicator(ins, "closeZScore")     // this instrument's own indicator
-        .map(RTIndicator::getValue).orElse(Double.NaN);
-
-    List<Double> prices = new ArrayList<>();          // read across all tracked instruments
+    super.update(ticker);
     for (Instrument other : getInstruments()) {
         getRTIndicator(other, "price")
             .filter(RTIndicator::isReady)
             .ifPresent(ind -> prices.add(ind.getValue()));
     }
-    // ... compute a market-wide stat from `prices`, then emitSignal(...)
 }
 ```
 
-Helpers on `AbstractTickerStrategy`:
-- `getInstruments()` — the set of instruments the strategy is tracking.
-- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator (read-only, no re-update).
-- Always call `super.update(ticker)` **first** — skip it and the indicators never advance.
+Helpers: `getInstruments()` (tracked set), `getRTIndicator(instrument, name)`
+(any instrument's indicator, read-only). Always call `super.update(ticker)` first.
 
 ## Common mistakes
 
-- **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
-- **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
-- **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
-- **Inner class vs lambda for listeners** — `AbstractOnChangeListener` gives access to helpers; prefer inner class over raw lambda.
-- **Hidden indicators** — prefix with `_` (e.g. `_gain`) to exclude from signal reporting metadata.
-- **Using JavaBean getters on Ticker** — `Ticker` is a record; use `ticker.last()` not `ticker.getLast()`, `ticker.instrument()` not `ticker.getInstrument()`, `ticker.timestamp()` not `ticker.getTimestamp().getTime()`.
+- **isReady check** — indicators need warmup. Always check before reading.
+- **Mutating in update()** — use `getReadOnlyExisting()` to prevent accidental state changes.
+- **One `setupIndicators` per class** — called once per instrument, not per tick.
+- **Inner class over lambda** — listeners need helpers from `AbstractOnChangeListener`.
+- **Hidden indicators** — prefix with `_` (e.g. `_gain`) to exclude from reporting.
+- **Ticker is a record** — `ticker.last()`, not `ticker.getLast()`.
 
+## Reference files
+
+| File | Content |
+|------|---------|
+| [references/indicators.md](references/indicators.md) | Full indicator catalogue (fluent builder + advanced classes) |
+| [references/examples.md](references/examples.md) | Complete strategy examples (EMA crossover, RSI, Bollinger, configurable) |
+| [references/patterns.md](references/patterns.md) | Production patterns (noise filtering, trailing exits, re-entry protection) |
