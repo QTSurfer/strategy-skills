@@ -191,3 +191,36 @@ if (volatility < 50.0) return; // market not active enough
 ```
 
 `clampUpdates(n)` suppresses the first N updates (returns 0) to allow the underlying SMA to warm up before volatility values are meaningful.
+
+---
+
+## Cross-instrument (market-wide) strategies
+
+A strategy instance sees **every** accepted instrument, each with its own indicator group. To
+compute something *across* instruments (a market-wide percentile, a relative-strength rank, a
+basket signal), override `update(Ticker)`, call `super.update(ticker)` first so the engine
+advances the firing instrument's indicators, then read any instrument's indicators:
+
+```java
+@Override
+public void update(Ticker ticker) {
+    super.update(ticker);                       // engine updates THIS instrument's group
+    Instrument ins = ticker.instrument();
+
+    double z = getRTIndicator(ins, "closeZScore")     // this instrument's own indicator
+        .map(RTIndicator::getValue).orElse(Double.NaN);
+
+    List<Double> prices = new ArrayList<>();          // read across all tracked instruments
+    for (Instrument other : getInstruments()) {
+        getRTIndicator(other, "price")
+            .filter(RTIndicator::isReady)
+            .ifPresent(ind -> prices.add(ind.getValue()));
+    }
+    // ... compute a market-wide stat from `prices`, then emitSignal(...)
+}
+```
+
+Helpers on `AbstractTickerStrategy`:
+- `getInstruments()` — the set of instruments the strategy is tracking.
+- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator (read-only, no re-update).
+- Always call `super.update(ticker)` **first** — skip it and the indicators never advance.

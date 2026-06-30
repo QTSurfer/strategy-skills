@@ -1,14 +1,14 @@
 ---
 name: qtsurfer-java-strategy
-description: Write, review, and debug QTSurfer Java trading strategies. Covers AbstractTickerStrategy, the indicator builder API, window listeners, state management, signal emission, and submission via the MCP server or SDK.
+description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.0.1
+  version: 1.1.0
 ---
 
 # QTSurfer Java Strategy
 
-A QTSurfer strategy is a plain Java class (no framework annotations required) that extends `AbstractTickerStrategy`. It receives real-time tickers, configures technical indicators, and emits buy/sell signals. The engine compiles strategies server-side — no local toolchain needed.
+A QTSurfer strategy is a plain Java class (no framework annotations required) that extends a strategy base class — most commonly `AbstractTickerStrategy` (see [Strategy base classes](#strategy-base-classes) for the kline, funding-rate, and multi-source siblings). It receives real-time market data, configures technical indicators, and emits buy/sell signals. The engine compiles strategies server-side — no local toolchain needed.
 
 ## Minimal template
 
@@ -92,7 +92,7 @@ public void update(Ticker ticker) {
 }
 ```
 
-`Ticker` is an engine record — use accessor methods (`ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`) rather than JavaBean getters.
+`Ticker` is an engine record — read fields with accessor methods: `ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`.
 
 ## Window listener pattern (recommended)
 
@@ -200,26 +200,6 @@ if (detectCrossAbove(crossState, 0, fast, slow)) emitBuy(price);
 if (detectCrossBelow(crossState, 0, fast, slow)) emitSell(price);
 ```
 
-## Building a Ticker in tests
-
-`engine.core.Ticker` is a **14-field record** — construct it directly (there is no builder):
-
-```java
-import com.wualabs.qtsurfer.engine.core.Ticker;
-import com.wualabs.qtsurfer.engine.core.Instrument;
-
-new Ticker(
-    new Instrument("BTC", "USDT"),       // instrument (base, quote[, settle])
-    bid, bidSize, ask, askSize,          // BigDecimal (nullable)
-    open, high, low, last, vwap,         // BigDecimal (nullable)
-    volume, quoteVolume, percentageChange, // BigDecimal (nullable)
-    epochMillis);                        // long — epoch MILLISECONDS
-```
-
-Field order: `instrument, bid, bidSize, ask, askSize, open, high, low, last, vwap, volume,
-quoteVolume, percentageChange, timestamp`. `Instrument` is also a record:
-`new Instrument(base, quote)` (spot) or `new Instrument(base, quote, settle)` (derivative).
-
 ## Compile & submit via MCP
 
 Download the MCP server from [QTSurfer/mcp-java releases](https://github.com/QTSurfer/mcp-java/releases/latest) (native binary or fat JAR) and configure it in your agent. Once connected:
@@ -230,42 +210,32 @@ Download the MCP server from [QTSurfer/mcp-java releases](https://github.com/QTS
 
 The engine compiles the strategy server-side — only the `.java` source is sent.
 
-## Current scope and roadmap
+## Strategy base classes
 
-**`AbstractTickerStrategy`** — processes real-time tickers (bid/ask/last, volume). This is the current primary strategy type.
+Every strategy extends one engine base class, chosen by the data source it consumes. The three
+single-source bases all extend `AbstractSubscriptionStrategy<T>` and share the **same model** this
+skill documents (indicator builder, window listeners, `StateStore`, signal emission) — only the
+`update(...)` payload differs. The examples here use `Ticker`, the most common source. Types live
+in `com.wualabs.qtsurfer.engine.core`.
 
-**`AbstractMultiStrategy`** _(coming soon)_ — will support multiple data sources in a single strategy: Tickers + KLines + FundingRates. Do not attempt to implement multi-source strategies with the current API.
+| Base class | Source | Handler | Via `submit_backtest` |
+|---|---|---|---|
+| `AbstractTickerStrategy` | `Ticker` (record) | `update(Ticker)` | ✅ primary, fully documented |
+| `AbstractKlineStrategy` | `Kline` (class) | `update(Kline)` | ✅ |
+| `AbstractFundingRateStrategy` | `FundingRate` (record) | `update(FundingRate)` | ✅ |
+| `AbstractMultiSourceStrategy` | Ticker + Kline + FundingRate | `onTicker` / `onKline` / `onFundingRate` | ⚠️ engine-only — not yet public |
+
+- **`AbstractKlineStrategy`** subscribes to candles for `getInterval()` (a `KlineInterval`). **OHLCV only** — order-book sizes, vwap, and percentage-change fields are absent on this path. `Kline` is a plain class, so use getters (`kline.getInstrument()`, `kline.getCloseTime()`), unlike the `Ticker` record.
+- **`AbstractFundingRateStrategy`** receives `update(FundingRate)` on each funding-rate update.
+- **`AbstractMultiSourceStrategy`** declares `getRequiredSources()` → `Set<MarketDataSource>` (`Ticker`, `KLine`, `FundingRate`) and dispatches each to `onTicker` / `onKline` / `onFundingRate`; when `KLine` is required, `getKlineInterval()` must be non-null. It compiles and registers in the engine but **is not yet runnable via the public `submit_backtest`** — don't ship multi-source strategies for backtesting until it is exposed.
 
 ## Cross-instrument (market-wide) strategies
 
 A strategy instance sees **every** accepted instrument, each with its own indicator group. To
 compute something *across* instruments (a market-wide percentile, a relative-strength rank, a
-basket signal), override `update(Ticker)`, call `super.update(ticker)` first so the engine
-advances the firing instrument's indicators, then read any instrument's indicators:
-
-```java
-@Override
-public void update(Ticker ticker) {
-    super.update(ticker);                       // engine updates THIS instrument's group
-    Instrument ins = ticker.instrument();
-
-    double z = getRTIndicator(ins, "closeZScore")     // this instrument's own indicator
-        .map(RTIndicator::getValue).orElse(Double.NaN);
-
-    List<Double> prices = new ArrayList<>();          // read across all tracked instruments
-    for (Instrument other : getInstruments()) {
-        getRTIndicator(other, "price")
-            .filter(RTIndicator::isReady)
-            .ifPresent(ind -> prices.add(ind.getValue()));
-    }
-    // ... compute a market-wide stat from `prices`, then emitSignal(...)
-}
-```
-
-Helpers on `AbstractTickerStrategy`:
-- `getInstruments()` — the set of instruments the strategy is tracking.
-- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator (read-only, no re-update).
-- Always call `super.update(ticker)` **first** — skip it and the indicators never advance.
+basket signal), override `update(Ticker)` and read other instruments' indicators via
+`getInstruments()` / `getRTIndicator(...)`. See
+[references/patterns.md](references/patterns.md) → "Cross-instrument (market-wide) strategies".
 
 ## Common mistakes
 
@@ -273,6 +243,5 @@ Helpers on `AbstractTickerStrategy`:
 - **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
 - **Inner class vs lambda for listeners** — `AbstractOnChangeListener` gives access to helpers; prefer inner class over raw lambda.
-- **Hidden indicators** — prefix with `_` (e.g. `_gain`) to exclude from signal reporting metadata.
 - **Using JavaBean getters on Ticker** — `Ticker` is a record; use `ticker.last()` not `ticker.getLast()`, `ticker.instrument()` not `ticker.getInstrument()`, `ticker.timestamp()` not `ticker.getTimestamp().getTime()`.
 

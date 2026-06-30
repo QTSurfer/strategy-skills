@@ -37,7 +37,7 @@ Write, review, and debug QTSurfer Java trading strategies.
 
 **Use when:**
 
-- Writing a new strategy that extends `AbstractTickerStrategy`
+- Writing a new strategy that extends `AbstractTickerStrategy` (or the `AbstractKlineStrategy` / `AbstractFundingRateStrategy` siblings)
 - Setting up indicators with the fluent builder (`InstrumentGroupRTIndicator`)
 - Implementing window listeners with `AbstractOnChangeListener`
 - Managing per-instrument state with `StateStore`
@@ -47,6 +47,7 @@ Write, review, and debug QTSurfer Java trading strategies.
 
 **Covers:**
 
+- Strategy base classes — `AbstractTickerStrategy` (ticker), `AbstractKlineStrategy` (kline), `AbstractFundingRateStrategy` (funding-rate), plus the engine-only `AbstractMultiSourceStrategy` (combined sources)
 - Full indicator catalogue (EMA, SMA, RSI, Bollinger, distance, gain, predicates, …)
 - Window time patterns (`WindowTime.s1` through `m5`, custom `Duration`)
 - `StateStore` API (counters, accumulators, boolean flags, arbitrary state)
@@ -93,9 +94,8 @@ propose changes.
 
 ## Roadmap
 
-- `qtsurfer-java-strategy` — Java via `AbstractTickerStrategy` ✅
+- `qtsurfer-java-strategy` — Java strategies: `AbstractTickerStrategy`, `AbstractKlineStrategy`, `AbstractFundingRateStrategy` ✅ (the `AbstractMultiSourceStrategy` multi-source base compiles in-engine but is not yet runnable via public `submit_backtest`)
 - `qtsurfer-ts-strategy` — TypeScript strategies _(planned)_
-- `qtsurfer-multi-strategy` — Multi-source via `AbstractMultiStrategy` (Tickers + KLines + FundingRates) _(planned)_
 
 ## License
 
