@@ -16,13 +16,16 @@ raw signal
 ```java
 indicators
     .add("raw", TickerValueSource.Close)
-    .distance("distemas%", "ema60", "ema500")
-    .clamp("distemas%", v -> Math.abs(v) <= 0.1, 0.0)
-    .percentChange("chgDistemas%")
-    .conditional("smoothDistemas%", "chgDistemas%", v -> v != 0,
+    .distance("distemas", "ema60", "ema500")
+    .clamp("distemas", v -> Math.abs(v) <= 0.1, 0.0)
+    .percentChange("chgDistemas")
+    .conditional("smoothDistemas", "chgDistemas", v -> v != 0,
         indicators.getReadOnlyExisting("ema500"), zeroIndicator)
-    .window("smoothDistemas%", WindowTime.s1, new DetectorListener(this, indicators));
+    .window("smoothDistemas", WindowTime.s1, new DetectorListener(this, indicators));
 ```
+
+> Names carry no `%` — `distance()`/`percentChange()` already tag the indicator's metadata with
+> `DisplayHint.PERCENT` (goal indicator-integrity), so a percent-y name doesn't need to say so.
 
 **Why:** Raw EMA-distance signals have too much noise for reliable decisions. The conditional prevents zero-padding from diluting the EMA when there's no meaningful change.
 
@@ -37,12 +40,12 @@ indicators
     .ema("ema60", 60)
     .ema("ema500", 500)
     .ema("ema2500", 2500)
-    .distance("shortDistemas%", "ema60", "ema500")   // short-term momentum
-    .distance("longDistemas%",  "ema500", "ema2500") // medium-term trend
+    .distance("shortDistemas", "ema60", "ema500")   // short-term momentum
+    .distance("longDistemas",  "ema500", "ema2500") // medium-term trend
     .gain("longStreakCount", "ema7500");              // macro uptrend
 ```
 
-**Entry gate:** `longDistemas% >= 0.35` AND `shortDistemas%` rising AND macro streak >= 300.
+**Entry gate:** `longDistemas >= 0.35` AND `shortDistemas` rising AND macro streak >= 300.
 
 ---
 
@@ -182,11 +185,11 @@ Prevent entries during low-activity periods:
 ```java
 indicators
     .addPrice()
-    .add("vlts%", new VolatilityRTIndicator(smaPeriods).clampUpdates(warmupPeriods))
+    .add("vlts", new VolatilityRTIndicator(smaPeriods).clampUpdates(warmupPeriods))
     // ...other indicators...
 
 // In entry listener:
-double volatility = indicators.getValue("vlts%");
+double volatility = indicators.getValue("vlts");
 if (volatility < 50.0) return; // market not active enough
 ```
 

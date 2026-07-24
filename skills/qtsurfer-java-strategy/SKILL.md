@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.1.0
+  version: 1.1.1
 ---
 
 # QTSurfer Java Strategy
@@ -38,7 +38,7 @@ public boolean acceptInstrument(Instrument instrument) {
 
 @Override
 public ExecutionMode getExecutionMode(Instrument instrument) {
-    return ExecutionMode.LONG; // LONG, SHORT, or LONG_SHORT
+    return ExecutionMode.LONG; // LONG, SHORT, or LONG_MULTI
 }
 ```
 

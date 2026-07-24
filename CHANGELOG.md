@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-07-24
+
+### Fixed 🐛
+
+- **Stale indicator package references (engine `indicator-integrity` package refactor)** — `references/indicators.md` still described the pro tier as one flat `com.wualabs.qtsurfer.engine.indicators.pro` package; the engine now categorizes it into `<category>.pro` sub-packages (`averages.pro`, `trend.pro`, `momentum.pro`, `volatility.pro`, `volume.pro`, plus the pre-existing `statistics.pro`), mirroring the free tier's own category packages (`averages`, `momentum`, `distance`, `bollinger`, `statistics`). The advanced-catalogue table now carries a **Tier** column (Free / Pro / Pro only) so free-vs-paid is explicit instead of silently mixed within a category row.
+- **Reintroduced `%`-suffixed indicator names** — `references/patterns.md` had several examples (`"distemas%"`, `"chgDistemas%"`, `"smoothDistemas%"`, `"vlts%"`, …) smuggling percent-display metadata into the indicator name string, the exact convention the engine's `indicator-integrity` goal eliminated (percent-ness now lives in the indicator's `DisplayHint` metadata, set automatically by `distance()`/`percentChange()`). Names are now clean; a note explains why.
+- **`getExecutionMode` example comment listed a non-existent enum value** — `SKILL.md`'s minimal template said `// LONG, SHORT, or LONG_SHORT`; the engine's `ExecutionMode` enum value is `LONG_MULTI`, not `LONG_SHORT`.
+
 ## [1.1.0] — 2026-06-30
 
 ### Added ✨

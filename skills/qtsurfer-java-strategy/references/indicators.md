@@ -132,10 +132,14 @@ indicators.getReadOnly("ema9").ifPresent(src ->
 
 ## Advanced indicator catalogue (statistics & pro)
 
-Beyond the fluent builder methods above, the engine ships ~180 indicator classes under
-`com.wualabs.qtsurfer.engine.indicators.{averages, bollinger, statistics, statistics.pro, pro}`.
-They are plain `RTIndicator` instances — add any of them by class with
-`.add("name", new XxxRTIndicator(...))`, then read with `indicators.getValue("name")`:
+Beyond the fluent builder methods above, the engine ships ~150 indicator classes across two tiers,
+one sub-package per category: `com.wualabs.qtsurfer.engine.indicators.<category>` for the **free**
+tier (`averages`, `momentum`, `distance`, `bollinger`, `statistics`, …) and
+`com.wualabs.qtsurfer.engine.indicators.<category>.pro` for the **paid, server-private** tier
+(`averages.pro`, `trend.pro`, `momentum.pro`, `volatility.pro`, `volume.pro`, `statistics.pro`, …) —
+a `pro` package segment is always the paid-tier marker. Pro classes are not shipped in the
+OSS/TypeScript port of the engine. They are plain `RTIndicator` instances — add any of them by
+class with `.add("name", new XxxRTIndicator(...))`, then read with `indicators.getValue("name")`:
 
 ```java
 import com.wualabs.qtsurfer.engine.indicators.statistics.StandardDeviationRTIndicator;
@@ -151,17 +155,22 @@ indicators
 ```
 
 Constructors vary per class — most take `(int periods)` and/or `(RTIndicator source, int periods)`;
-some (lombok-built) differ, so check the class. Useful classes by category:
+some (lombok-built) differ, so check the class. Useful classes by category — Trend, Volume, and
+performance Ratios are **pro-only today**, the free tier has no indicator in those categories yet:
 
-| Category | `*RTIndicator` classes |
-|---|---|
-| Moving averages | `Sma`, `Ema`, `Wma`, `Hma`, `Kama`, `Tema`, `Mma` |
-| Statistics | `StandardDeviation`, `Variance`, `ZScore`, `Skewness`, `Kurtosis`, `RollingPercentile`, `Correlation`, `Covariance`, `Beta` |
-| Regression / trend | `LinearRegressionSlope`, `SimpleLinearRegression`, `Adx`, `Aroon`, `SuperTrend`, `ParabolicSar`, `Ichimoku` |
-| Volatility | `Atr`, `Natr`, `PercentVolatility`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
-| Volume | `Vwap`, `Obv`, `Mfi`, `Cmf`, `Adl`, `ElderForceIndex` |
-| Oscillators | `Macd`, `StochasticOscillator`, `StochasticRsi`, `Cci`, `Roc`, `Momentum`, `WilliamsR`, `UltimateOscillator` |
-| Ratios (performance) | `SharpeRatio`, `SortinoRatio`, `CalmarRatio`, `MaxDrawdown`, `OmegaRatio`, `UlcerIndex` |
+| Category | Tier | `*RTIndicator` classes |
+|---|---|---|
+| Moving averages | Free | `Sma`, `Ema`, `Wma`, `Hma`, `Kama`, `Tema`, `Mma` |
+| Moving averages | Pro | `Alma`, `Dema`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma`, `Wma` (O(1) twin), `Envelopes` |
+| Statistics | Free | `StandardDeviation`, `Variance` |
+| Statistics | Pro | `StandardDeviation`, `Variance` (O(1) twins), `ZScore`, `Skewness`, `Kurtosis`, `RollingPercentile`, `Correlation`, `Covariance`, `Beta`, `LinearRegressionSlope`, `SimpleLinearRegression` |
+| Trend | Pro only | `Adx`, `Aroon`, `SuperTrend`, `ParabolicSar`, `Ichimoku`, `DonchianChannel`, `EfficiencyRatio` |
+| Volatility | Free | `VolatilityRTIndicator`, `PercentVolatilityRTIndicator` |
+| Volatility | Pro | `Atr`, `Natr`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
+| Volume | Pro only | `Vwap`, `Obv`, `Mfi`, `Cmf`, `Adl`, `ElderForceIndex` |
+| Oscillators | Free | `Macd`, `StochasticRsi`, `Cci` |
+| Oscillators | Pro | `StochasticOscillator`, `Roc`, `Momentum`, `WilliamsR`, `UltimateOscillator` |
+| Ratios (performance) | Pro only | `SharpeRatio`, `SortinoRatio`, `CalmarRatio`, `MaxDrawdown`, `OmegaRatio`, `UlcerIndex` |
 
 Compose them by feeding one indicator's read-only view into another's `(RTIndicator, …)` constructor
 (e.g. a `ZScore` of an `Sma`). This is how to do rolling stats / aggregation **without
