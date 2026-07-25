@@ -45,9 +45,9 @@ Fires once per 1-second window, not on every tick.
 ```java
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
 
 public class RsiStrategy extends AbstractTickerStrategy {
 
@@ -59,15 +59,14 @@ public class RsiStrategy extends AbstractTickerStrategy {
             .window("rsi14", WindowTime.s1, new RsiListener(this, indicators));
     }
 
-    private class RsiListener extends AbstractOnChangeListener {
+    private class RsiListener extends AbstractWindowListener {
 
         RsiListener(AbstractTickerStrategy s, InstrumentGroupRTIndicator ind) {
             super(s, ind);
         }
 
         @Override
-        public void onChange(StateStoreSupport storeSupport, double prev, double actual) {
-            initStore(storeSupport);
+        public void onChange(StateStore store, double prev, double actual) {
             if (actual < 30 && !store.is("inPosition")) {
                 emitBuy(indicators.getValue("price"));
                 store.set("inPosition");
@@ -89,9 +88,9 @@ Used in CI integration tests — known to compile and run correctly.
 ```java
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
 
 public class ForcedTradeStrategy extends AbstractTickerStrategy {
 
@@ -101,15 +100,14 @@ public class ForcedTradeStrategy extends AbstractTickerStrategy {
             new TradeListener(this, indicators));
     }
 
-    private class TradeListener extends AbstractOnChangeListener {
+    private class TradeListener extends AbstractWindowListener {
 
         TradeListener(AbstractTickerStrategy s, InstrumentGroupRTIndicator ind) {
             super(s, ind);
         }
 
         @Override
-        public void onChange(StateStoreSupport storeSupport, double prev, double actual) {
-            initStore(storeSupport);
+        public void onChange(StateStore store, double prev, double actual) {
             long count = store.inc("count");
             if (count % 120 == 60) emitBuy(actual);
             else if (count % 120 == 0) emitSell(actual);
@@ -125,9 +123,9 @@ Buy when price touches the lower band; sell at the upper band.
 ```java
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
 
 public class BollingerReversionStrategy extends AbstractTickerStrategy {
 
@@ -139,16 +137,15 @@ public class BollingerReversionStrategy extends AbstractTickerStrategy {
             .window("price", WindowTime.s5, new BandListener(this, indicators));
     }
 
-    private class BandListener extends AbstractOnChangeListener {
+    private class BandListener extends AbstractWindowListener {
 
         BandListener(AbstractTickerStrategy s, InstrumentGroupRTIndicator ind) {
             super(s, ind);
         }
 
         @Override
-        public void onChange(StateStoreSupport storeSupport, double prev, double actual) {
+        public void onChange(StateStore store, double prev, double actual) {
             if (!indicators.getExisting("bb").isReady()) return;
-            initStore(storeSupport);
 
             double upper = indicators.getValue("bbUpper");
             double lower = indicators.getValue("bbLower");
@@ -173,10 +170,11 @@ Strategy parameters configurable at submission time via `@StrategyProperty`.
 
 ```java
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
+import com.wualabs.qtsurfer.engine.strategy.CrossDetector;
 import com.wualabs.qtsurfer.engine.strategy.StrategyProperty;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
 
 import java.time.Duration;
 
@@ -201,19 +199,20 @@ public class ConfigurableEmaStrategy extends AbstractTickerStrategy {
                 new CrossListener(this, indicators));
     }
 
-    private class CrossListener extends AbstractOnChangeListener {
-        private final Boolean[] cross = new Boolean[1];
+    private class CrossListener extends AbstractWindowListener {
+        private final CrossDetector cross = new CrossDetector();
 
         CrossListener(AbstractTickerStrategy s, InstrumentGroupRTIndicator ind) {
             super(s, ind);
         }
 
         @Override
-        public void onChange(StateStoreSupport storeSupport, double prev, double actual) {
+        public void onChange(StateStore store, double prev, double actual) {
             if (!indicators.getExisting("slow").isReady()) return;
             double slow = indicators.getValue("slow");
-            if (detectCrossAbove(cross, 0, actual, slow)) emitBuy(actual);
-            if (detectCrossBelow(cross, 0, actual, slow)) emitSell(actual);
+            CrossDetector.Cross result = cross.check(actual, slow);
+            if (result.above()) emitBuy(actual);
+            if (result.below()) emitSell(actual);
         }
     }
 }

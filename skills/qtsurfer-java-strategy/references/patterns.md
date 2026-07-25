@@ -24,9 +24,6 @@ indicators
     .window("smoothDistemas", WindowTime.s1, new DetectorListener(this, indicators));
 ```
 
-> Names carry no `%` — `distance()`/`percentChange()` already tag the indicator's metadata with
-> `DisplayHint.PERCENT` (goal indicator-integrity), so a percent-y name doesn't need to say so.
-
 **Why:** Raw EMA-distance signals have too much noise for reliable decisions. The conditional prevents zero-padding from diluting the EMA when there's no meaningful change.
 
 ---
@@ -160,20 +157,21 @@ All production-tested strategies use 2–3 independent confirmation stages befor
 
 ---
 
-## Shared StateStore between windows
+## Shared state between windows
 
-When two windows on the same instrument need to coordinate (e.g., entry window sets a flag, exit window reads it):
+Every window built on the same `InstrumentGroupRTIndicator` shares one instrument-level
+`StateStore` — no wiring needed. An entry window can set a flag and an exit window on the same
+group reads it straight away, because both `onChange` calls receive the same store:
 
 ```java
-// In setupIndicators, share the instrument's strategy-level store
-StateStore sharedStore = getStateStore(instrument).orElse(null);
-
 indicators
-    .globalStateStore()  // or pass the shared store explicitly
+    .addPrice()
+    .ema("ema10", 10)
     .window("ema10", WindowTime.s1, new EntryListener(this, indicators))
     .window("price", Duration.ofMillis(100), new ExitListener(this, indicators));
 
-// Both listeners call initStore(storeSupport) — they see the same store
+// EntryListener.onChange(StateStore store, ...) { store.set("inPosition"); ... }
+// ExitListener.onChange(StateStore store, ...)  { if (store.is("inPosition")) ... }
 ```
 
 ---

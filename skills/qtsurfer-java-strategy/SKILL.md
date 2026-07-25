@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.1.1
+  version: 1.2.0
 ---
 
 # QTSurfer Java Strategy
@@ -99,8 +99,8 @@ public void update(Ticker ticker) {
 Listeners fire once per time window rather than on every tick. Prefer this over `update()` for strategies that react to bar closes.
 
 ```java
-import com.wualabs.qtsurfer.engine.strategy.AbstractOnChangeListener;
-import com.wualabs.qtsurfer.engine.core.state.StateStoreSupport;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
 import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
 
 public class MyStrategy extends AbstractTickerStrategy {
@@ -113,7 +113,7 @@ public class MyStrategy extends AbstractTickerStrategy {
             .window("rsi14", WindowTime.m1, new SignalListener(this, indicators));
     }
 
-    private class SignalListener extends AbstractOnChangeListener {
+    private class SignalListener extends AbstractWindowListener {
 
         public SignalListener(AbstractTickerStrategy strategy,
                               InstrumentGroupRTIndicator indicators) {
@@ -121,9 +121,8 @@ public class MyStrategy extends AbstractTickerStrategy {
         }
 
         @Override
-        public void onChange(StateStoreSupport store, double prev, double actual) {
-            initStore(store);                  // lazy-init this.store
-            long count = this.store.inc("bars");
+        public void onChange(StateStore store, double prev, double actual) {
+            long count = store.inc("bars");
 
             if (actual < 30) emitBuy(indicators.getValue("price"));
             if (actual > 70) emitSell(indicators.getValue("price"));
@@ -132,26 +131,56 @@ public class MyStrategy extends AbstractTickerStrategy {
 }
 ```
 
-`AbstractOnChangeListener` gives you:
+`AbstractWindowListener` gives you:
 - `emitBuy(price)` / `emitSell(price)` / `emitSignal(signal)`
-- `detectCrossAbove(state, idx, left, right)` / `detectCrossBelow(...)`
-- `initStore(storeSupport)` → initialises `this.store` (call at top of `onChange`)
+- `getPrevInstant()` / `getCurrInstant()` — when the window that just fired opened / closed
 - `this.instrument` — current instrument
 - `this.indicators` — indicator group
 
+Crossover detection is a standalone helper, not a method on the listener — see
+[Crossover detection helper](#crossover-detection-helper) below.
+
+`store` arrives as `onChange`'s first parameter — already resolved, nothing to initialise. It's
+the same store every listener on this instrument shares (see [State management](#state-management)
+below); `getPrevInstant()`/`getCurrInstant()` only resolve when the listener is registered on a
+window (via `.window(...)`, as above) — calling them on a listener attached to a plain indicator
+throws.
+
 ## State management
 
-`StateStore` is per-instrument, lazily initialised. Access via `initStore(storeSupport)` inside a listener, or `getStateStore(instrument)` inside `update()`.
+`StateStore` is per-instrument and shared by every listener on that instrument's indicator group
+(one store, not one per window). It's created lazily — a window nobody listens to never touches
+it. Inside a window listener it arrives as `onChange`'s first parameter; outside a listener (e.g.
+in `update()`) reach it via `getStateStore(instrument)`, which returns `Optional<StateStore>`:
 
 ```java
-this.store.inc("count")          // int counter, returns new value
-this.store.dec("count")
-this.store.set("inPosition")     // boolean flag → true
-this.store.unset("inPosition")   // → false
-this.store.is("inPosition")      // read boolean
-this.store.add("pnl", delta)     // double accumulator, returns new value
-this.store.setState("key", obj)  // arbitrary object
-this.store.getState("key", def)  // with default
+@Override
+public void update(Ticker ticker) {
+    Instrument instrument = ticker.instrument();
+    updateInstrument(instrument, ticker.timestamp());
+    var ind = updateIndicators(instrument, ticker);
+
+    StateStore store = getStateStore(instrument).orElseThrow();
+    long ticks = store.inc("ticks");
+    // ...
+}
+```
+
+`getStateStore(instrument)` is inherited from the strategy base class — always present (never
+`Optional.empty()`) for the documented base classes, so `.orElseThrow()` is safe; it's `Optional`
+because the underlying `Strategy` contract allows an implementation to not support per-instrument
+state at all. Calling it, unlike a window's own store access, resolves the store immediately —
+it doesn't wait for a listener.
+
+```java
+store.inc("count")          // int counter, returns new value
+store.dec("count")
+store.set("inPosition")     // boolean flag → true
+store.unset("inPosition")   // → false
+store.is("inPosition")      // read boolean
+store.add("pnl", delta)     // double accumulator, returns new value
+store.setState("key", obj)  // arbitrary object
+store.getState("key", def)  // with default
 ```
 
 ## Configurable properties
@@ -193,12 +222,17 @@ Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
 ## Crossover detection helper
 
 ```java
-private Boolean[] crossState = new Boolean[1]; // one slot per crossover
+import com.wualabs.qtsurfer.engine.strategy.CrossDetector;
+
+private final CrossDetector fastSlowCross = new CrossDetector(); // one instance per pair watched
 
 // In onChange or update:
-if (detectCrossAbove(crossState, 0, fast, slow)) emitBuy(price);
-if (detectCrossBelow(crossState, 0, fast, slow)) emitSell(price);
+CrossDetector.Cross cross = fastSlowCross.check(fast, slow);
+if (cross.above()) emitBuy(price);
+if (cross.below()) emitSell(price);
 ```
+
+One `check(left, right)` call reports both directions together, so they always describe the same tick.
 
 ## Compile & submit via MCP
 
@@ -242,6 +276,6 @@ basket signal), override `update(Ticker)` and read other instruments' indicators
 - **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
 - **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
-- **Inner class vs lambda for listeners** — `AbstractOnChangeListener` gives access to helpers; prefer inner class over raw lambda.
+- **Inner class vs lambda for listeners** — `AbstractWindowListener` gives access to helpers; prefer inner class over raw lambda.
 - **Using JavaBean getters on Ticker** — `Ticker` is a record; use `ticker.last()` not `ticker.getLast()`, `ticker.instrument()` not `ticker.getInstrument()`, `ticker.timestamp()` not `ticker.getTimestamp().getTime()`.
 

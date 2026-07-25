@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-07-25
+
+### Changed 🔄
+
+- **`AbstractOnChangeListener` renamed to `AbstractWindowListener`** (engine goal `state-store-dx` P2.4) — the class became window-specific once instant sugar moved onto it (see Added below), and the old name collided with `java.awt.event.WindowListener` in auto-import-heavy AI-generated code. `SKILL.md`, `references/examples.md`, `references/patterns.md`, and `README.md` all updated.
+- **`onChange`'s store parameter is now `StateStore`, not `StateStoreSupport`** (engine goal `state-store-dx` P2.2) — `StateStoreSupport` is gone; the store is handed to `onChange` already resolved. The `initStore(storeSupport)` ritual and the `this.store` field are both gone — use the `store` parameter directly. A window with no listener still never touches the store (laziness preserved, P2.1).
+- **"Shared StateStore between windows" pattern simplified** — all windows built on the same `InstrumentGroupRTIndicator` already share one instrument-level store by default (D-3); the old example's `getStateStore(instrument)` / `globalStateStore()` dance documented a call that doesn't exist. Renamed to "Shared state between windows" with a two-line example.
+- **`detectCrossAbove`/`detectCrossBelow` replaced by `CrossDetector`** (engine goal `state-store-dx` P2.5) — the two methods are gone from the base classes entirely; crossover tracking is now a standalone `CrossDetector` you construct as a field (`new CrossDetector()`) and query with one `check(left, right)` call returning `Cross(above, below)`. See Fixed below for why the old shape had to go, not just get renamed.
+
+### Added ✨
+
+- **`getPrevInstant()` / `getCurrInstant()` on `AbstractWindowListener`** (engine goal `state-store-dx` P2.3) — when a listener is registered on a window (`.window(...)`), it now reports that window's own boundaries (when it opened / when it closed) directly, without going through the state store. Fixes the addressability gap in the old pattern: `window("rsi14", WindowTime.m1, new SignalListener(...))` builds an auto-named window, so there was never a way to reach the instant keys the old approach wrote into the store under a window-name prefix.
+- **"Indicator metadata" section in `references/indicators.md`** — documents `RTIndicator#getMeta()` / `getId()` / `getDisplayHint()` / `isHidden()` and the `AbstractRTIndicator#withMeta(...)` / `withDisplayHint(...)` builder setters for custom indicators, with the write-only-descriptor constraint spelled out. Gives an agent a way to introspect what an indicator carries (e.g. "is this value already a percentage?") without parsing its name.
+- **`getStateStore(instrument)` usage example in `update()`** — the "State management" section described the accessor in prose but never showed it called; added a worked `update(Ticker)` snippet plus a note that it always resolves the store immediately (unlike a window listener's lazily-resolved one) and is safe to `.orElseThrow()` on the documented base classes.
+
+### Fixed 🐛
+
+- **Crossover detection helper silently broke its second direction** — `SKILL.md`'s "Crossover detection helper" and `references/examples.md` example 5 both called `detectCrossAbove(cross, 0, ...)` then `detectCrossBelow(cross, 0, ...)` on the *same* array slot, in the same tick. Both methods unconditionally overwrote that slot with the current tick's value on every call, so the first call always clobbered the value the second one needed — meaning whichever direction was checked second could never fire, on any strategy copied from these examples. Root-caused in the engine (goal `state-store-dx` P2.5) and fixed there by replacing the shape entirely with `CrossDetector`, which computes both directions from one read-then-write; docs updated to match.
+- **Internal goal reference in `references/patterns.md`** — the "Names carry no `%`" note cited `(goal indicator-integrity)`, a doc that only exists in the private engine repo and is meaningless to a reader of this public skill. Removed; the explanation stands on its own without it.
+
 ## [1.1.1] — 2026-07-24
 
 ### Fixed 🐛

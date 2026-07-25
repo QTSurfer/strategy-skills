@@ -242,3 +242,45 @@ Prefix with `_` to exclude from signal reporting metadata:
 ```java
 .gain("_rawGain", "price")   // internal use, not reported
 ```
+
+This is sugar over the `VISIBILITY` metadata entry — see below.
+
+## Indicator metadata
+
+Every indicator carries small descriptive key/value metadata about itself, kept separate from its
+registered lookup name, readable from any `RTIndicator` instance (e.g. via
+`indicators.getExisting("name")` / `getReadOnlyExisting("name")`):
+
+```java
+RTIndicator ind = indicators.getExisting("gap");
+ind.getId();                     // canonical type id, e.g. "distance", "bollinger", "rsi"
+ind.getDisplayHint();            // DisplayHint: ABSOLUTE (default), PERCENT, or VOLUME
+ind.isHidden();                  // true if internal-only (the "_" prefix above sets this)
+ind.getMeta().get("periods");    // any other descriptive key, or null if unset
+```
+
+Useful for introspection without parsing the name string — e.g. checking
+`getDisplayHint() == DisplayHint.PERCENT` before formatting a value for display, or `getId()` to
+branch generically over whatever indicator is registered under a name. `distance()` /
+`percentChange()` / `distanceMa()` set `PERCENT` automatically; most other indicators carry no
+metadata — `getMeta()` returns the shared `IndicatorMeta.EMPTY`, never `null`.
+
+To attach metadata on a **custom** indicator (see
+[Writing a custom RTIndicator](#writing-a-custom-rtindicator)), extend `AbstractRTIndicator` and
+use its fluent setters at registration:
+
+```java
+import com.wualabs.qtsurfer.engine.indicators.core.AbstractRTIndicator;
+import com.wualabs.qtsurfer.engine.indicators.core.IndicatorMeta;
+import com.wualabs.qtsurfer.engine.indicators.core.DisplayHint;
+
+indicators.add("gap",
+    new MyDistanceIndicator(a, b)
+        .withMeta(IndicatorMeta.ID, "distance")
+        .withMeta("periods", 20)
+        .withDisplayHint(DisplayHint.PERCENT));
+```
+
+Metadata is a **write-only descriptor** — an indicator must never read its own metadata back to
+drive its computation, that would make it a second, undeclared configuration channel. Set it once
+at registration; read it only from the outside.

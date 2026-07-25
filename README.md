@@ -39,7 +39,7 @@ Write, review, and debug QTSurfer Java trading strategies.
 
 - Writing a new strategy that extends `AbstractTickerStrategy` (or the `AbstractKlineStrategy` / `AbstractFundingRateStrategy` siblings)
 - Setting up indicators with the fluent builder (`InstrumentGroupRTIndicator`)
-- Implementing window listeners with `AbstractOnChangeListener`
+- Implementing window listeners with `AbstractWindowListener`
 - Managing per-instrument state with `StateStore`
 - Using crossover detection, trailing exits, or noise filtering patterns
 - Submitting a strategy for backtesting via the MCP server or SDK
@@ -52,7 +52,7 @@ Write, review, and debug QTSurfer Java trading strategies.
 - Window time patterns (`WindowTime.s1` through `m5`, custom `Duration`)
 - `StateStore` API (counters, accumulators, boolean flags, arbitrary state)
 - `@StrategyProperty` for runtime-configurable parameters
-- Classloader boundary constraint — why inner classes must extend `AbstractOnChangeListener`
+- Classloader boundary constraint — why inner classes must extend `AbstractWindowListener`
 - Advanced patterns from production strategies (noise filtering chain, EMA distance analysis, trailing exits, re-entry protection)
 - 5 complete working examples
 
