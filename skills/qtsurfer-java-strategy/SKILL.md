@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.2.0
+  version: 1.3.0
 ---
 
 # QTSurfer Java Strategy
@@ -134,6 +134,7 @@ public class MyStrategy extends AbstractTickerStrategy {
 `AbstractWindowListener` gives you:
 - `emitBuy(price)` / `emitSell(price)` / `emitSignal(signal)`
 - `getPrevInstant()` / `getCurrInstant()` — when the window that just fired opened / closed
+- `getEngineVersion()` / `getEngineVersionMajor()` / `getEngineVersionMinor()` — the running engine version (see [Engine version](#engine-version))
 - `this.instrument` — current instrument
 - `this.indicators` — indicator group
 
@@ -270,6 +271,38 @@ compute something *across* instruments (a market-wide percentile, a relative-str
 basket signal), override `update(Ticker)` and read other instruments' indicators via
 `getInstruments()` / `getRTIndicator(...)`. See
 [references/patterns.md](references/patterns.md) → "Cross-instrument (market-wide) strategies".
+
+## Engine version
+
+Three accessors are available with no import, both on the strategy and inside a window listener:
+
+```java
+@Override
+public void update(Ticker ticker) {
+    log.info("running on engine {}", getEngineVersion());  // e.g. "1.0.81"
+
+    if (getEngineVersionMajor() >= 1) { /* ... */ }        // also getEngineVersionMinor()
+}
+```
+
+The value is read from the loaded engine jar's own metadata, so it reports the engine actually
+running rather than one baked in when the strategy was compiled. Nothing here throws — when the
+version cannot be determined `getEngineVersion()` returns `EngineVersion.UNKNOWN` (`"unknown"`) and
+the numeric accessors return `EngineVersion.UNKNOWN_COMPONENT` (`-1`), so they are safe to call
+unguarded and a version gate fails closed instead of matching by accident. Major and minor resolve
+together: check one and you can trust the other.
+
+For the patch component, import the engine class — it is deliberately not mirrored onto the sugar:
+
+```java
+import com.wualabs.qtsurfer.engine.EngineVersion;
+
+int patch = EngineVersion.getPatch();  // 81
+```
+
+Worth emitting (in an `InfoStrategySignal`, or logged on first tick) for strategies that are stored
+and re-run later: engine APIs do change between versions, and a stored strategy that suddenly
+misbehaves is far easier to diagnose when the engine it ran on is recorded alongside the result.
 
 ## Common mistakes
 

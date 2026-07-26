@@ -53,6 +53,7 @@ Write, review, and debug QTSurfer Java trading strategies.
 - `StateStore` API (counters, accumulators, boolean flags, arbitrary state)
 - `@StrategyProperty` for runtime-configurable parameters
 - Classloader boundary constraint — why inner classes must extend `AbstractWindowListener`
+- `getEngineVersion()` — reading the version of the engine a strategy is running on
 - Advanced patterns from production strategies (noise filtering chain, EMA distance analysis, trailing exits, re-entry protection)
 - 5 complete working examples
 
