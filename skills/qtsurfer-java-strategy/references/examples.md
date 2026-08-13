@@ -5,7 +5,7 @@
 Buy when fast EMA crosses above slow EMA; sell on cross below.
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.core.instrument.Instrument;
 import com.wualabs.qtsurfer.engine.core.Ticker;
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;

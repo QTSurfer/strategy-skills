@@ -28,7 +28,7 @@ public class MyStrategy extends AbstractTickerStrategy {
 `acceptInstrument` and `getExecutionMode` have sensible defaults (accept all instruments, LONG mode). Override only when needed:
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.core.instrument.Instrument;
 import com.wualabs.qtsurfer.engine.strategy.execution.ExecutionMode;
 
 @Override
@@ -73,7 +73,7 @@ Custom: `Duration.ofSeconds(n)` or `Duration.ofMinutes(n)`
 ### Reading indicator values outside a listener
 
 ```java
-import com.wualabs.qtsurfer.engine.core.Instrument;
+import com.wualabs.qtsurfer.engine.core.instrument.Instrument;
 import com.wualabs.qtsurfer.engine.core.Ticker;
 
 @Override
