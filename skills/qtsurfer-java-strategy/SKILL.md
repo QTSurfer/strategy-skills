@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.3.0
+  version: 1.4.0
 ---
 
 # QTSurfer Java Strategy
@@ -24,6 +24,19 @@ public class MyStrategy extends AbstractTickerStrategy {
     }
 }
 ```
+
+## Allowed imports
+
+Strategy code runs in a sandboxed classloader with a package whitelist — importing anything outside it fails at execution time (not at compile time), with a bare `<class> could not be found`-style error and no indication of *why*. Allowed, by top-level package (every subpackage is included):
+
+- `com.wualabs.qtsurfer.engine.*` — the strategy/indicator API itself
+- `java.lang`, `java.util` (including `java.util.stream`, `java.util.function`, `java.util.regex`, `java.util.concurrent.atomic`), `java.math`
+- `java.time` (including `java.time.format`, `java.time.temporal`) — `Duration`, `Instant`, `LocalDate` etc. are fine to use, e.g. in `.window(name, Duration.ofSeconds(n), listener)`
+- `java.text` — `DecimalFormat`/`NumberFormat` for formatting values in signal messages or logs
+
+Explicitly blocked regardless of package: `System`, `Runtime`, `Thread`, `Executor`/`ExecutorService`. `java.io` is blocked outright — a strategy has no business doing file or network I/O of its own; all market data and order execution goes through the engine API above.
+
+This list is deliberately small and compiled into the platform rather than configurable — a sandbox for untrusted user code should not be extensible through a weaker channel than a reviewed code change. If a strategy needs something outside it, that's a platform decision, not something to work around client-side.
 
 `acceptInstrument` and `getExecutionMode` have sensible defaults (accept all instruments, LONG mode). Override only when needed:
 
