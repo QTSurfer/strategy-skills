@@ -196,6 +196,18 @@ private int fastPeriod = 9;
 
 Properties are injected before `setupIndicators` is called.
 
+**Add a JavaBean setter for every property you sweep or default this way** (`public void
+setFastPeriod(int value)` for the field above). `@StrategyProperty` defaults to
+`reflected = true`, and any value applied from outside the field's own initializer — the
+annotation's `defaultValue`, or a `submit_sweep` parameter vector — is written through that
+setter by reflection, by name (`set` + capitalized field name). Without it the platform throws
+`NoSuchMethodException: setFastPeriod` — for a sweep this surfaces mid-run, once it reaches the
+first vector that touches the field, not at submission. A property with no `defaultValue` and
+never swept is read straight off its own initializer and needs no setter.
+
+`min`, `max` and `step` on the annotation are advisory range hints a sweep's parameter grid can
+read — not validated against, just a suggested range for pre-filling one.
+
 ## Signal emission
 
 | Method | When to use |

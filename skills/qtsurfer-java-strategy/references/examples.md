@@ -189,6 +189,13 @@ public class ConfigurableEmaStrategy extends AbstractTickerStrategy {
     @StrategyProperty(name = "window.seconds", description = "Window in seconds", defaultValue = "1")
     private int windowSeconds = 1;
 
+    // A defaultValue on a reflected property (the default; see StrategyProperty) is applied via
+    // its JavaBean setter, not the field initializer — required here even for a plain backtest,
+    // not only when sweeping this property.
+    public void setFastPeriod(int fastPeriod) { this.fastPeriod = fastPeriod; }
+    public void setSlowPeriod(int slowPeriod) { this.slowPeriod = slowPeriod; }
+    public void setWindowSeconds(int windowSeconds) { this.windowSeconds = windowSeconds; }
+
     @Override
     protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
         indicators
