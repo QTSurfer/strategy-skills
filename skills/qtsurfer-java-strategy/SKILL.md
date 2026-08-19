@@ -238,22 +238,27 @@ store.getState("key", def)  // with default
 
 ```java
 @StrategyProperty(name = "rsi.period", description = "RSI period", defaultValue = "14")
-private int rsiPeriod = 14;
+private int rsiPeriod;
 
 @StrategyProperty(name = "ema.fast", description = "Fast EMA period", defaultValue = "9")
-private int fastPeriod = 9;
+private int fastPeriod;
 ```
 
-Properties are injected before `setupIndicators` is called.
+The annotation and the field are the whole declaration — no getter, no setter. Properties are
+injected before `setupIndicators` is called, and the same is true of a `submit_sweep` parameter
+vector: it is written to the field directly.
 
-**Add a JavaBean setter for every property you sweep or default this way** (`public void
-setFastPeriod(int value)` for the field above). `@StrategyProperty` defaults to
-`reflected = true`, and any value applied from outside the field's own initializer — the
-annotation's `defaultValue`, or a `submit_sweep` parameter vector — is written through that
-setter by reflection, by name (`set` + capitalized field name). Without it the platform throws
-`NoSuchMethodException: setFastPeriod` — for a sweep this surfaces mid-run, once it reaches the
-first vector that touches the field, not at submission. A property with no `defaultValue` and
-never swept is read straight off its own initializer and needs no setter.
+**Let `defaultValue` be the only place the default is written.** A field initializer (`private int
+fastPeriod = 9;`) runs *after* the annotation's default has been applied and overwrites it, so if
+the two ever disagree the strategy runs on the initializer while the platform records the
+annotation's value against the results. Declaring the default once, on the annotation, removes the
+question.
+
+Declare a JavaBean setter only when the property needs one — validation, clamping, or recomputing
+something derived from it. When a setter exists, every injection channel goes through it, so the
+guard is never bypassed. The field must not be `static` (its value would be shared across sweep
+trials running in parallel) or `final` (nothing can assign it after construction); either needs a
+setter, and a property with neither is reported as a notice rather than silently skipped.
 
 `min`, `max` and `step` on the annotation are advisory range hints a sweep's parameter grid can
 read — not validated against, just a suggested range for pre-filling one.

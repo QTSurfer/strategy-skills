@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-08-19
+
+### Added ✨
+
+- **"Allowed imports" section in `SKILL.md`** — the sandbox classloader enforces a package whitelist, and an import outside it fails at *execution* time with a bare "class could not be found" and no hint as to why, which is a long way from the import that caused it. The section names what is allowed (`com.wualabs.qtsurfer.engine.*`, `java.lang`, `java.util`, `java.math`, `java.time`, `java.text`) and what is blocked regardless of package (`System`, `Runtime`, `Thread`, `Executor`/`ExecutorService`, and `java.io` outright). Also documents that the list is compiled into the platform rather than configurable — a sandbox for untrusted code should not be extensible through a weaker channel than a reviewed change.
+- **"Language level" section in `SKILL.md`** — strategy code compiles against a language base well behind the JDK the platform runs on, and targeting it like modern Java fails with an error that points at the syntax rather than the cause. `var` and lambdas/method references are called out specifically: lambdas do not compile in any position, so an anonymous inner class is the substitute.
+
+### Changed 🔄
+
+- **A `@StrategyProperty` field no longer needs a JavaBean setter** — the annotation and the field are the whole declaration, and the engine writes the field directly. The previous guidance (added after the platform threw `NoSuchMethodException: setFastPeriod` mid-sweep) is removed from `SKILL.md`, and `references/examples.md`'s configurable-EMA strategy drops the three hand-written pass-through setters it carried for that reason alone. Declare a setter only when the property needs validating, clamping, or something derived recomputed: when one exists every injection channel still goes through it, so the guard is never bypassed. The field must not be `static` — its value would be shared across sweep trials running in parallel — or `final`, which nothing can assign after construction; either needs a setter, and a property with neither is reported as a notice rather than silently skipped.
+- **The default is declared once, on `defaultValue`** — examples no longer repeat it as a field initializer. An initializer runs *after* the annotation's default has been applied and overwrites it, so if the two disagree the strategy runs on the initializer while the platform records the annotation's value against the results. Writing it in one place removes the question.
+
+### Fixed 🐛
+
+- **`Instrument` moved packages and the docs sample never followed** — the override is `acceptInstrument(Instrument)` from `com.wualabs.qtsurfer.engine.core.instrument`, not `acceptCurrencyPair(CurrencyPair)` from `org.knowm.xchange.*`; the XChange import would not even load under the sandbox whitelist. `ExecutionMode`'s third value is `LONG_MULTI`, not `LONG_SHORT`. Also notes that the *default* `acceptInstrument` is not unconditional — it gates on the strategy's output currency, so accepting everything means overriding it with `return true`.
+- **Examples used language features the compiler rejects** — `var` and lambdas removed from `SKILL.md` and all three `references/` files, in favour of explicit types and anonymous inner classes.
+
+### Note
+
+Versions 1.2.0 and 1.3.0 bumped `SKILL.md` but not `.claude-plugin/marketplace.json`, which stayed at 1.2.0; this release brings all three (manifest, skill frontmatter, changelog) back into the lockstep `CONTRIBUTING.md` requires.
+
 ## [1.3.0] — 2026-07-26
 
 ### Added ✨

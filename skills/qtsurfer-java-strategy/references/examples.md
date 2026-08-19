@@ -181,21 +181,16 @@ import java.time.Duration;
 
 public class ConfigurableEmaStrategy extends AbstractTickerStrategy {
 
+    // The annotation is the whole declaration: no accessors, and the default written once, on
+    // defaultValue rather than on a field initializer that would overwrite it.
     @StrategyProperty(name = "ema.fast", description = "Fast EMA period", defaultValue = "9")
-    private int fastPeriod = 9;
+    private int fastPeriod;
 
     @StrategyProperty(name = "ema.slow", description = "Slow EMA period", defaultValue = "21")
-    private int slowPeriod = 21;
+    private int slowPeriod;
 
     @StrategyProperty(name = "window.seconds", description = "Window in seconds", defaultValue = "1")
-    private int windowSeconds = 1;
-
-    // A defaultValue on a reflected property (the default; see StrategyProperty) is applied via
-    // its JavaBean setter, not the field initializer — required here even for a plain backtest,
-    // not only when sweeping this property.
-    public void setFastPeriod(int fastPeriod) { this.fastPeriod = fastPeriod; }
-    public void setSlowPeriod(int slowPeriod) { this.slowPeriod = slowPeriod; }
-    public void setWindowSeconds(int windowSeconds) { this.windowSeconds = windowSeconds; }
+    private int windowSeconds;
 
     @Override
     protected void setupIndicators(InstrumentGroupRTIndicator indicators) {

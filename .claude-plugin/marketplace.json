@@ -13,7 +13,7 @@
       "name": "qtsurfer-java-strategy",
       "source": "./skills/qtsurfer-java-strategy",
       "description": "Write, review, and debug QTSurfer Java trading strategies — AbstractTickerStrategy, indicator builder, window listeners, state management, and advanced patterns",
-      "version": "1.2.0",
+      "version": "1.4.0",
       "author": {
         "name": "QTSurfer"
       },
