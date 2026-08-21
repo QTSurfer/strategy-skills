@@ -248,6 +248,9 @@ The annotation and the field are the whole declaration — no getter, no setter.
 injected before `setupIndicators` is called, and the same is true of a `submit_sweep` parameter
 vector: it is written to the field directly.
 
+**The `submit_sweep` param-key is the annotation `name` (with dots), NOT the Java field name.**
+In the example above the grid key is `rsi.period` / `ema.fast`, not `rsiPeriod` / `fastPeriod`:
+
 **Let `defaultValue` be the only place the default is written.** A field initializer (`private int
 fastPeriod = 9;`) runs *after* the annotation's default has been applied and overwrites it, so if
 the two ever disagree the strategy runs on the initializer while the platform records the
