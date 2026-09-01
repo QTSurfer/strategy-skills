@@ -280,7 +280,10 @@ fails to compile with a missing-method error, not a runtime one:
 ### Data / analytics signals — `InfoStrategySignal`
 
 For non-trading strategies that emit **computed fields** (analytics, metrics) rather than
-buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`:
+buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`.
+Two constructors, matching the `emitBuy` convention:
+
+- **Top-level strategy (`update()`) — `createInfoStrategySignal(instrument)`**, instrument explicit:
 
 ```java
 InfoStrategySignal signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
@@ -289,6 +292,24 @@ signal.set("zscore", z);
 signal.set("vwap", vwap);
 emitSignal(signal);
 ```
+
+- **Inside a window listener (`AbstractWindowListener.onChange`) — `createInfoSignal()`**, instrument implicit:
+
+```java
+InfoStrategySignal signal = createInfoSignal();  // listener knows its instrument
+signal.set("interval", "1m");
+signal.set("zscore", z);
+signal.set("vwap", vwap);
+emitSignal(signal);
+```
+
+The listener form takes no instrument because the listener already knows it — the same
+convention as the `emitBuy(price)` / `emitSell(price)` sugar above. `createInfoSignal()`
+only exists inside the listener scope; on the top-level strategy use
+`createInfoStrategySignal(instrument)`.
+
+`signal.set(...)` also accepts a varargs market-data style for the `_m` chart marker, e.g.
+`signal.set("_m", "position", "belowBar", "shape", "arrowUp", "color", "#26a69a", "text", "BUY")`.
 
 Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
 `signal.getInstrument()`. Prefix a field's name with `_` to keep it out of reporting metadata.
