@@ -17,13 +17,10 @@ raw signal
 indicators
     .add("raw", TickerValueSource.Close)
     .distance("distemas", "ema60", "ema500")
-    .clamp("distemas", new Predicate<Double>() {
-        public boolean test(Object v) { return Math.abs((Double) v) <= 0.1; }
-    }, 0.0)
+    .clamp("distemas", v -> Math.abs(v) <= 0.1, 0.0)
     .percentChange("chgDistemas")
-    .conditional("smoothDistemas", "chgDistemas", new Predicate<RTIndicator>() {
-        public boolean test(Object ind) { return ((RTIndicator) ind).getValue() != 0; }
-    }, indicators.getReadOnlyExisting("ema500"), zeroIndicator)
+    .conditional("smoothDistemas", "chgDistemas", v -> v != 0,
+        indicators.getReadOnlyExisting("ema500"), zeroIndicator)
     .window("smoothDistemas", WindowTime.s1, new DetectorListener(this, indicators));
 ```
 
@@ -212,21 +209,13 @@ public void update(Ticker ticker) {
     Instrument ins = ticker.instrument();
 
     double z = getRTIndicator(ins, "closeZScore")     // this instrument's own indicator
-        .map(new Function<RTIndicator, Double>() {
-            public Double apply(Object r) { return ((RTIndicator) r).getValue(); }
-        }).orElse(Double.NaN);
+        .map(RTIndicator::getValue).orElse(Double.NaN);
 
-    // final: a local captured by an anonymous class below must be declared final here —
-    // effectively-final capture (no keyword needed) isn't supported.
-    final List<Double> prices = new ArrayList<>();    // read across all tracked instruments
+    List<Double> prices = new ArrayList<>();          // read across all tracked instruments
     for (Instrument other : getInstruments()) {
         getRTIndicator(other, "price")
-            .filter(new Predicate<RTIndicator>() {
-                public boolean test(Object r) { return ((RTIndicator) r).isReady(); }
-            })
-            .ifPresent(new Consumer<RTIndicator>() {
-                public void accept(Object ind) { prices.add(((RTIndicator) ind).getValue()); }
-            });
+            .filter(RTIndicator::isReady)
+            .ifPresent(ind -> prices.add(ind.getValue()));
     }
     // ... compute a market-wide stat from `prices`, then emitSignal(...)
 }

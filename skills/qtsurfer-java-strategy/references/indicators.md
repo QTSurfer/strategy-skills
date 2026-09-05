@@ -3,16 +3,6 @@
 All methods below are on `InstrumentGroupRTIndicator` and return `this` for chaining.
 Default indicator name (when `name` is omitted) is the method name + parameters, e.g. `rsi14`.
 
-Callback-taking methods (`fun`, `predicate`, `periodCount`, `conditional`, `clamp`, `decorate`)
-take anonymous inner classes below, not lambdas — see Language level in SKILL.md. They implement
-`java.util.function.{Predicate,BiFunction,UnaryOperator,Consumer}` from the standard library;
-import whichever you use. **Declare the overridden method's parameters as `Object` and cast inside
-the body**, not as the generic's actual type (`Double`, `RTIndicator`, ...) — the platform doesn't
-generate the bridge method a real `Double`/`RTIndicator`-typed override needs to satisfy the
-erased interface, so a naturally-typed override fails with "must implement method ... apply(Object,
-Object)" even though it looks correct. The return type doesn't need this — declare that as the
-real type, only the parameters need `Object`.
-
 ## Price sources
 
 ```java
@@ -75,10 +65,7 @@ real type, only the parameters need `Object`.
 .diff("spread", "ask", "bid")         // diff = ask - bid
 .mul("price", 0.01)                   // scale by coefficient
 .mul("ratio", "vol", "price")         // vol * price
-.fun("custom", "a", "b", new BiFunction<Double, Double, Double>() {
-    public Double apply(Object a, Object b) { return (Double) a / (Double) b; }
-})  // arbitrary BiFunction — see Language level in SKILL.md for why not a lambda,
-    // and note apply()'s params are Object, not Double: generic bridge methods aren't generated
+.fun("custom", "a", "b", (a, b) -> a / b)  // arbitrary BiFunction
 ```
 
 ## Predicates & conditionals
@@ -90,12 +77,8 @@ real type, only the parameters need `Object`.
 .lessOrEqual("le", "price", 50000)
 .equal("eq", "price", 100)
 .notEqual("ne", "price", 100)
-.predicate("custom", "price", new Predicate<Double>() {
-    public boolean test(Object v) { return (Double) v > 0 && (Double) v < 100; }
-})
-.periodCount("cnt", "oversold", new Predicate<Double>() {
-    public boolean test(Object v) { return (Double) v > 0; }
-})  // count consecutive true periods
+.predicate("custom", "price", v -> v > 0 && v < 100)
+.periodCount("cnt", "oversold", v -> v > 0)  // count consecutive true periods
 ```
 
 ## Conditional selection
@@ -103,22 +86,16 @@ real type, only the parameters need `Object`.
 ```java
 // If indicator == coef → thenIndicator else elseIndicator
 .equal("selected", "signal", 1, "emaFast", "emaSlow")
-.conditional("out", "flag", new Predicate<RTIndicator>() {
-    public boolean test(Object ind) { return ((RTIndicator) ind).getValue() > 0; }
-}, thenInd, elseInd)
+.conditional("out", "flag", ind -> ind.getValue() > 0, thenInd, elseInd)
 ```
 
 ## Transformations
 
 ```java
 .clamp("price", 0.0, 100.0)          // clamp to [min, max]
-.clamp("price", new Predicate<Double>() {
-    public boolean test(Object v) { return (Double) v < 0; }
-}, 0.0)     // clamp when predicate true
+.clamp("price", v -> v < 0, 0.0)     // clamp when predicate true
 .round("price", 2)                    // round to N decimals
-.decorate("price", "price", new UnaryOperator<RTIndicator>() {
-    public RTIndicator apply(Object ind) { return new MyWrapper((RTIndicator) ind); }
-})
+.decorate("price", "price", ind -> new MyWrapper(ind))
 ```
 
 ## Window listeners
@@ -147,9 +124,8 @@ RTIndicator src = indicators.getReadOnlyExisting("ema9");
 indicators.add("custom", new MyIndicator(src));
 
 // Option C — getReadOnly() returns Optional (safe if indicator may not exist)
-indicators.getReadOnly("ema9").ifPresent(new Consumer<RTIndicator>() {
-    public void accept(Object src) { indicators.add("custom", new MyIndicator((RTIndicator) src)); }
-});
+indicators.getReadOnly("ema9").ifPresent(src ->
+    indicators.add("custom", new MyIndicator(src)));
 ```
 
 `.ro()` is a default method on `RTIndicator` itself — available on every indicator instance without going through the group. Use it when you already hold a reference to the indicator object.

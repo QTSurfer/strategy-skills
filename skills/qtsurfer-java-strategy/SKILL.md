@@ -27,7 +27,7 @@ public class MyStrategy extends AbstractTickerStrategy {
 
 ## Allowed imports
 
-Strategy code runs in a sandboxed classloader with a package whitelist — importing anything outside it fails at execution time (not at compile time), with a bare `<class> could not be found`-style error and no indication of *why*. Allowed, by top-level package (every subpackage is included):
+Strategy code can import from a fixed set of packages — importing anything outside it fails at execution time (not at compile time), with a bare `<class> could not be found`-style error and no indication of *why*. Allowed, by top-level package (every subpackage is included):
 
 - `com.wualabs.qtsurfer.engine.*` — the strategy/indicator API itself
 - `java.lang`, `java.util` (including `java.util.stream`, `java.util.function`, `java.util.regex`, `java.util.concurrent.atomic`), `java.math`
@@ -35,8 +35,6 @@ Strategy code runs in a sandboxed classloader with a package whitelist — impor
 - `java.text` — `DecimalFormat`/`NumberFormat` for formatting values in signal messages or logs
 
 Explicitly blocked regardless of package: `System`, `Runtime`, `Thread`, `Executor`/`ExecutorService`. `java.io` is blocked outright — a strategy has no business doing file or network I/O of its own; all market data and order execution goes through the engine API above.
-
-This list is deliberately small and compiled into the platform rather than configurable — a sandbox for untrusted user code should not be extensible through a weaker channel than a reviewed code change. If a strategy needs something outside it, that's a platform decision, not something to work around client-side.
 
 `acceptInstrument` and `getExecutionMode` have sensible defaults (accept all instruments, LONG mode). Override only when needed:
 
@@ -58,42 +56,6 @@ public ExecutionMode getExecutionMode(Instrument instrument) {
 > Note: the **default** `acceptInstrument` is *not* unconditional — it gates on the strategy's
 > output currency / `acceptCurrency`. To accept **every** instrument unconditionally, override it
 > explicitly with `return true`.
-
-## Language level
-
-Strategy code compiles against a language base well behind the JDK the platform itself runs on —
-targeting it like modern Java produces a compile-time error with no indication that the cause is
-the language level rather than a typo. Concretely, avoid:
-
-- **`var`** (local variable type inference) — declare the type explicitly. `updateIndicators(...)`
-  returns `InstrumentMapRTIndicator`; `setupIndicators` receives `InstrumentGroupRTIndicator` — two
-  different types, easy to mix up once you can't lean on `var` to paper over it.
-- **Lambdas and method references** (`x -> ...`, `Foo::bar`) — not just style; they don't compile
-  at all here, in any position (argument, assignment, return value). Use a named or anonymous inner
-  class instead, which is also what every window listener already requires (see below).
-- **Switch expressions** (`switch (x) { case 1 -> ...; }`) — use a classic `switch` statement, or
-  `if`/`else`.
-- **Records**, **sealed types**, **pattern matching** (`instanceof` with binding, pattern `switch`)
-  — none of these are available; write the equivalent longhand.
-- **A captured local without `final`** — an anonymous/inner class reading a variable from its
-  enclosing method needs that variable declared `final`, explicitly. Effectively-final capture
-  (no keyword, as long as it's never reassigned) isn't supported — a variable that would be legal
-  to capture in modern Java still needs the keyword here.
-
-Two more, specific to implementing a generic functional interface (`Predicate<Double>`,
-`BiFunction<Double,Double,Double>`, ...) as an anonymous class — the natural-looking override
-looks correct and still fails to compile:
-
-- **Override the parameter types as `Object`, not the generic's real type**, and cast inside the
-  method body. `new Predicate<Double>() { public boolean test(Double v) { ... } }` fails with
-  *"must implement method ... test(Object)"* — the bridge method a `Double`-typed override needs
-  is never generated. `public boolean test(Object v) { return (Double) v > 0; }` is what actually
-  compiles. This applies to every parameter of every method on these interfaces —
-  `BiFunction.apply(Object, Object)`, `Consumer.accept(Object)`, all of it.
-- **The return type doesn't have this problem** — declare it as the real type (`Double`, not
-  `Object`); only parameters need to be `Object`.
-
-Text blocks and try-with-resources are fine. When in doubt, write it the way Java 7 would.
 
 ## Indicator setup
 
@@ -124,13 +86,12 @@ Custom: `Duration.ofSeconds(n)` or `Duration.ofMinutes(n)`
 ```java
 import com.wualabs.qtsurfer.engine.core.instrument.Instrument;
 import com.wualabs.qtsurfer.engine.core.Ticker;
-import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentMapRTIndicator;
 
 @Override
 public void update(Ticker ticker) {
     Instrument instrument = ticker.instrument();
     updateInstrument(instrument, ticker.timestamp());
-    InstrumentMapRTIndicator ind = updateIndicators(instrument, ticker);
+    var ind = updateIndicators(instrument, ticker);
 
     if (!ind.getExisting("emaSlow").isReady()) return; // wait for warmup
 
@@ -209,7 +170,7 @@ in `update()`) reach it via `getStateStore(instrument)`, which returns `Optional
 public void update(Ticker ticker) {
     Instrument instrument = ticker.instrument();
     updateInstrument(instrument, ticker.timestamp());
-    InstrumentMapRTIndicator ind = updateIndicators(instrument, ticker);
+    var ind = updateIndicators(instrument, ticker);
 
     StateStore store = getStateStore(instrument).orElseThrow();
     long ticks = store.inc("ticks");
@@ -403,10 +364,7 @@ misbehaves is far easier to diagnose when the engine it ran on is recorded along
 - **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
 - **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
-- **Lambda for a listener** — not a style choice: lambdas don't compile here at all. Use a named
-  inner class (see [Language level](#language-level)).
-- **`var` in strategy code** — doesn't compile; declare the type explicitly (see
-  [Language level](#language-level)).
+- **Inner class vs lambda for listeners** — `AbstractWindowListener` gives access to helpers; prefer inner class over raw lambda.
 - **`emitBuy(price)` outside a window listener** — that single-argument overload only exists on
   `AbstractWindowListener`; everywhere else (`update()`, helper methods) it's
   `emitBuy(instrument, price)` (see [Signal emission](#signal-emission)).
