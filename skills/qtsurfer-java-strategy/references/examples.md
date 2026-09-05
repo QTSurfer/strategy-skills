@@ -8,7 +8,6 @@ Buy when fast EMA crosses above slow EMA; sell on cross below.
 import com.wualabs.qtsurfer.engine.core.instrument.Instrument;
 import com.wualabs.qtsurfer.engine.core.Ticker;
 import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
-import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentMapRTIndicator;
 import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
 
 public class EmaCrossoverStrategy extends AbstractTickerStrategy {
@@ -24,7 +23,7 @@ public class EmaCrossoverStrategy extends AbstractTickerStrategy {
     public void update(Ticker ticker) {
         Instrument inst = ticker.instrument();
         updateInstrument(inst, ticker.timestamp());
-        InstrumentMapRTIndicator ind = updateIndicators(inst, ticker);
+        var ind = updateIndicators(inst, ticker);
 
         if (!ind.getExisting("slow").isReady()) return;
 

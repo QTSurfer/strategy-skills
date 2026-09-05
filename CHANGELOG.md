@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed 🗑️
+
+- **"Language level" section in `SKILL.md`**, added in 1.4.0 — the skill no longer documents a reduced Java language subset, and the examples in `SKILL.md`, `references/indicators.md`, `references/patterns.md` and `references/examples.md` read as they did before that release: `var` and lambdas, not explicit types and anonymous inner classes. A skill for writing strategies should describe what the author writes rather than the shape of the compilation behind it, and a language-level claim in prose goes stale without anyone noticing. The two `Common mistakes` entries that existed only to point at that section went with it, and the third is back to its earlier wording — preferring an inner class for a listener is a preference about helper access, not a compilation constraint.
+
+### Changed 🔄
+
+- **"Allowed imports" trimmed to the list itself** — which packages a strategy may import, and the failure mode when it reaches outside them (execution time, bare "class could not be found"), both stay: an author needs those. The paragraph about how the list is enforced and why it is not configurable is gone; it describes the platform rather than the strategy.
+
+Unrelated API facts introduced alongside the removed material stay: `emitBuy`/`emitSell` taking the instrument explicitly outside a window listener, the signal-emission overload table, and the `Instrument` package move.
+
 ## [1.4.0] — 2026-08-19
 
 ### Added ✨
