@@ -10,6 +10,12 @@ metadata:
 
 A QTSurfer strategy is a plain Java class (no framework annotations required) that extends a strategy base class — most commonly `AbstractTickerStrategy` (see [Strategy base classes](#strategy-base-classes) for the kline, funding-rate, and multi-source siblings). It receives real-time market data, configures technical indicators, and emits buy/sell signals. The engine compiles strategies server-side — no local toolchain needed.
 
+> **Also available: QTScript (`.qtscript`), in beta** — a compact strategy language whose braced
+> bodies are plain Java, covered by the **`qtsurfer-qtscript-strategy`** skill. It suits a strategy
+> that is a handful of indicators and window bodies. Everything below stays the way to write a
+> strategy with the full engine API — `update()`, cross-instrument logic, custom indicators, helper
+> types — and is what QTScript expands into.
+
 ## Minimal template
 
 ```java

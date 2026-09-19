@@ -19,6 +19,16 @@ skills/qtsurfer-java-strategy/
 
 Go there first. If you only read one file, read `skills/qtsurfer-java-strategy/SKILL.md`.
 
+A strategy can also be written in **QTScript** (`.qtscript`), a compact language **in beta** whose
+braced bodies are plain Java — the same API as above, which is why that skill stays the reference
+for what goes inside a body:
+
+```
+skills/qtsurfer-qtscript-strategy/
+  SKILL.md                 <- the language (header, param, init, instruments, setup:, windows)
+  references/examples.md   <- complete .qtscript strategies, one per data source
+```
+
 > Raw links (for agents that fetch URLs):
 > - SKILL.md: `https://raw.githubusercontent.com/QTSurfer/strategy-skills/main/skills/qtsurfer-java-strategy/SKILL.md`
 > - examples: `https://raw.githubusercontent.com/QTSurfer/strategy-skills/main/skills/qtsurfer-java-strategy/references/examples.md`
