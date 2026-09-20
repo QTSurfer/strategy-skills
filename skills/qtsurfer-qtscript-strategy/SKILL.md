@@ -236,7 +236,7 @@ parameter, a malformed instrument pattern) and Java's, from inside a body. A fai
 strategy is running is reported the same way, on the line the body came from:
 
 ```
-QTS line 6: Index 2 out of bounds for length 1
+QTScript line 6: Index 2 out of bounds for length 1
 ```
 
 Two more things to know:
