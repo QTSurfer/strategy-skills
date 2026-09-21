@@ -16,6 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   registers and its data can be prepared, but a run or a sweep over funding data is rejected with a
   `400`. And it notes that whitespace and comments before `strategy` do not change how a file is
   recognised.
+- **`qtsurfer-java-strategy`: two statements in "Strategy base classes" brought in line with what the
+  platform runs.** `AbstractKlineStrategy` no longer "subscribes to candles for `getInterval()`": in a
+  backtest the bar width is the `cadence` the data was prepared at (`1s`, `1m`, `5m`, `15m`, `30m`,
+  `1h`, `4h`, `1d`), whatever `getInterval()` returns. And `AbstractFundingRateStrategy` is no longer
+  marked runnable through `submit_backtest`: funding data can be prepared, but a run or a sweep over it
+  is rejected with a `400` for now. Nothing was removed; the rest of the skill is untouched.
 
 ### Added ✨
 

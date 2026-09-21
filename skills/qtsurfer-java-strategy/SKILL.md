@@ -318,11 +318,11 @@ in `com.wualabs.qtsurfer.engine.core`.
 |---|---|---|---|
 | `AbstractTickerStrategy` | `Ticker` (record) | `update(Ticker)` | ✅ primary, fully documented |
 | `AbstractKlineStrategy` | `Kline` (class) | `update(Kline)` | ✅ |
-| `AbstractFundingRateStrategy` | `FundingRate` (record) | `update(FundingRate)` | ✅ |
+| `AbstractFundingRateStrategy` | `FundingRate` (record) | `update(FundingRate)` | ⚠️ prepare only for now — a run or sweep is rejected (`400`) |
 | `AbstractMultiSourceStrategy` | Ticker + Kline + FundingRate | `onTicker` / `onKline` / `onFundingRate` | ⚠️ engine-only — not yet public |
 
-- **`AbstractKlineStrategy`** subscribes to candles for `getInterval()` (a `KlineInterval`). **OHLCV only** — order-book sizes, vwap, and percentage-change fields are absent on this path. `Kline` is a plain class, so use getters (`kline.getInstrument()`, `kline.getCloseTime()`), unlike the `Ticker` record.
-- **`AbstractFundingRateStrategy`** receives `update(FundingRate)` on each funding-rate update.
+- **`AbstractKlineStrategy`** receives candles. In a backtest the bar width is the `cadence` the data was prepared at — `1s`, `1m`, `5m`, `15m`, `30m`, `1h`, `4h` or `1d` — whatever `getInterval()` (a `KlineInterval`) returns, so one class runs at any of them. **OHLCV only** — order-book sizes, vwap, and percentage-change fields are absent on this path. `Kline` is a plain class, so use getters (`kline.getInstrument()`, `kline.getCloseTime()`), unlike the `Ticker` record.
+- **`AbstractFundingRateStrategy`** receives `update(FundingRate)` on each funding-rate update. Funding data can be prepared, but a backtest or a sweep over it is rejected with a `400` for now (`funding data can be prepared but not executed yet`) — it registers and compiles, and cannot yet be run through `submit_backtest`.
 - **`AbstractMultiSourceStrategy`** declares `getRequiredSources()` → `Set<MarketDataSource>` (`Ticker`, `KLine`, `FundingRate`) and dispatches each to `onTicker` / `onKline` / `onFundingRate`; when `KLine` is required, `getKlineInterval()` must be non-null. It compiles and registers in the engine but **is not yet runnable via the public `submit_backtest`** — don't ship multi-source strategies for backtesting until it is exposed.
 
 ## Cross-instrument (market-wide) strategies
