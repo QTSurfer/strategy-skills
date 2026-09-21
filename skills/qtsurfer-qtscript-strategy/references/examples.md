@@ -85,7 +85,9 @@ Both bodies write to one store, so `Trend` can leave a value `Oversold` reads on
 
 ## 4. Candle range breakout (kline)
 
-On `kline` the bar's fields are in scope as plain variables.
+On `kline` the bar's fields are in scope as plain variables. The bar width is not in the file: it
+is the `cadence` you prepare the data at (`1m`, `1h`, `1d`, …), so the same strategy runs at any of
+them.
 
 ```
 strategy "Range breakout" kline
@@ -104,7 +106,8 @@ setup:
 ## 5. Funding rate watch (funding)
 
 A strategy that computes rather than trades: `emitInfo` attaches fields to an informational signal.
-On funding there is no price — the value is `rate`.
+On funding there is no price — the value is `rate`. The platform accepts this file and can prepare
+funding data, but a backtest or sweep over funding data is rejected for now.
 
 ```
 strategy "Funding watch" funding

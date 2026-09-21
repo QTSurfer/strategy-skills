@@ -46,7 +46,8 @@ watches it on a one-minute window and emits on the crossings.
 ## Submitting one
 
 Nothing new to configure. The platform decides the language from the **source text** — a strategy
-whose first token is `strategy` is QTScript — so a `.qtscript` source goes wherever a Java source
+whose first token is `strategy` is QTScript, and whitespace or comments (`//`, `/* */`) before it are
+ignored, so a description can sit on top of the file — so a `.qtscript` source goes wherever a Java source
 goes: the API, the SDK, or `submit_backtest` through the
 [MCP server](https://github.com/QTSurfer/mcp-java). The file extension is a convention for you and
 your editor; only the text is sent.
@@ -65,8 +66,15 @@ name is derived from it (`"RSI reversion"` → `RSIreversion`). The optional key
 source, and maps to the base class you would otherwise have extended (ticker, kline or funding-rate
 — see *Strategy base classes* in the `qtsurfer-java-strategy` skill).
 
-`kline` never takes an interval: candles are one-second, and there is no syntax for anything else.
-The multi-source base is not offered, matching what the public backtest path runs.
+`kline` never takes an interval: the bar width is not part of the strategy. You choose it when you
+prepare the data for a run — the `cadence` of the prepare request: `1s` (the default), `1m`, `5m`,
+`15m`, `30m`, `1h`, `4h` or `1d` — and the same file can be run at several cadences. The
+multi-source base is not offered, matching what the public backtest path runs.
+
+**What can be run today.** `ticker` and `kline` strategies can be executed, swept and
+walk-forward validated. A `funding` strategy registers and its data can be prepared, but a run or a
+sweep over funding data is rejected with a `400` for now (`funding data can be prepared but not
+executed yet`), so a funding file is accepted and cannot yet be backtested.
 
 ## `param` — configurable values
 
