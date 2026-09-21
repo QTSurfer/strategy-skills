@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed 🔄
+
+- **`qtsurfer-qtscript-strategy`: kline runs, and the bar width is yours.** A kline strategy can now
+  be executed, swept and walk-forward validated; the skill no longer says candles are one-second. The
+  width comes from the `cadence` the data is prepared at (`1s`, `1m`, `5m`, `15m`, `30m`, `1h`, `4h`
+  or `1d`), so one file runs at several. It also says what does not run yet: a funding strategy
+  registers and its data can be prepared, but a run or a sweep over funding data is rejected with a
+  `400`. And it notes that whitespace and comments before `strategy` do not change how a file is
+  recognised.
+- **`qtsurfer-java-strategy`: two statements in "Strategy base classes" brought in line with what the
+  platform runs.** `AbstractKlineStrategy` no longer "subscribes to candles for `getInterval()`": in a
+  backtest the bar width is the `cadence` the data was prepared at (`1s`, `1m`, `5m`, `15m`, `30m`,
+  `1h`, `4h`, `1d`), whatever `getInterval()` returns. And `AbstractFundingRateStrategy` is no longer
+  marked runnable through `submit_backtest`: funding data can be prepared, but a run or a sweep over it
+  is rejected with a `400` for now. Nothing was removed; the rest of the skill is untouched.
+
 ### Added ✨
 
 - **New skill `qtsurfer-qtscript-strategy` 1.0.0 — QTScript (`.qtscript`), in beta.** A second way to
