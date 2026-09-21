@@ -1,10 +1,31 @@
 # Changelog
 
-All notable changes to the **QTSurfer Java Strategy** skill are documented here.
+All notable changes to the skills in this repository are documented here. Entries name the skill they
+belong to; versions are per skill (see `.claude-plugin/marketplace.json`).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added ✨
+
+- **New skill `qtsurfer-qtscript-strategy` 1.0.0 — QTScript (`.qtscript`), in beta.** A second way to
+  write a strategy, alongside the Java one: a compact language of sections (`strategy`, `param`,
+  `init`, `instruments`, `setup:`, five window forms) that compiles to a single Java class, where
+  **every braced body is plain Java**. The skill documents the language, what is in scope inside a
+  body (`actual`, `prev`, `store`, the per-source value variables, `value("name")`, signal emission),
+  the declarative instrument filter and its regular-expression form, how compile and run-time errors
+  are reported against the line the author wrote, and — explicitly — what QTScript does not do
+  (`update()`, cross-instrument logic, custom indicators, helper types), each being a reason to write
+  the strategy in Java instead. `references/examples.md` carries complete files for the ticker, kline
+  and funding sources.
+- **`qtsurfer-java-strategy`: a pointer to the new skill**, after the opening paragraph — one
+  paragraph naming QTScript as the beta alternative and stating that the Java route remains the one
+  with the full engine API. Nothing else in the skill changed: the Java guidance, references and
+  examples are untouched.
+- **Repository index entries for the second skill** — `README.md` (a "Two ways to write a strategy"
+  table, the skill's own section, install lines, roadmap), `AGENTS.md` (the file map) and
+  `.claude-plugin/marketplace.json` (a second plugin entry at 1.0.0).
 
 ### Removed 🗑️
 

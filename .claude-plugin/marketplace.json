@@ -26,6 +26,24 @@
         "indicators"
       ],
       "category": "workflow"
+    },
+    {
+      "name": "qtsurfer-qtscript-strategy",
+      "source": "./skills/qtsurfer-qtscript-strategy",
+      "description": "Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — beta: a compact strategy language whose braced bodies are plain Java",
+      "version": "1.0.0",
+      "author": {
+        "name": "QTSurfer"
+      },
+      "keywords": [
+        "trading",
+        "strategy",
+        "qtscript",
+        "backtesting",
+        "qtsurfer",
+        "indicators"
+      ],
+      "category": "workflow"
     }
   ]
 }
