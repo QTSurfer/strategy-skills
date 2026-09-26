@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-qtscript-strategy` 1.1.0: windows on a call that publishes several names, `$indicator`, and what a `200` means.**
+  The skill said an inline window could not be written on `bollinger(20, 2)`; it can: the window attaches to the
+  middle band and `actual` is its value. It now documents `$indicator`, the name of the indicator a window is attached to (how a
+  body reaches the outer bands its line registered), and that a window on a name that is not registered is found at validation, not
+  when registering. "When something is wrong" now says that a `200` from registering means the source parsed and compiled, not that it
+  will run, so a strategy just written should be validated before it is run, and that the source is capped at 32 KiB (a larger body
+  is refused with `413`, the cap named in the JSON error).
 - **`qtsurfer-qtscript-strategy`: kline runs, and the bar width is yours.** A kline strategy can now
   be executed, swept and walk-forward validated; the skill no longer says candles are one-second. The
   width comes from the `cadence` the data is prepared at (`1s`, `1m`, `5m`, `15m`, `30m`, `1h`, `4h`

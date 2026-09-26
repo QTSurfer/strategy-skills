@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, setup:, windows) instead of a Java class, or when reading QTScript compile and run-time errors. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # QTSurfer QTScript Strategy
@@ -194,10 +194,30 @@ Main m1 {
 }
 ```
 
-**Attaching by position has one limit.** The inline postfix form deduces which indicator the line
-registered, so it cannot be used on a call that publishes several names — `bollinger(20, 2)`
-publishes three. The compiler says so, names the candidates and points at the by-name form; use
-`window blgr20_2 m1 { … }`.
+**A window on a call that publishes several names.** `bollinger(20, 2)` registers three indicators
+under one name: the middle band, `blgr20_2`, and the outer bands, that name followed by `Upper` and
+`Lower`. The inline postfix form attaches to the middle band, so `bollinger(20, 2) window m1 { … }`
+works and `actual` is the middle band's value. The by-name form, `window blgr20_2 m1 { … }`, is the
+same window.
+
+**`$indicator` is the name of the indicator the window is attached to**, as a `String` (`"ema12"` on
+`ema(12) window m1 { … }`, `"price"` on a `Main`, `"rate"` on funding). It is how a body reaches the
+outer bands that its own line registered, and what tells a named section apart when it is attached to
+several indicators (each time it fires it sees the one that fired):
+
+```
+setup:
+  bollinger(20, 2) window m1 {
+    if (price > value($indicator + "Upper")) emitSell(price);
+    if (price < value($indicator + "Lower")) emitBuy(price);
+  }
+```
+
+The `$` marks a name QTScript provides, so the names you declare cannot start with one.
+
+**A window on a name that is not registered** (`window nosuch m1 { … }`) is not rejected when you
+register the source: whether the name exists can depend on your `param`s and on indicators registered
+from Java. It is found when the strategy is validated (see "When something is wrong").
 
 ### Inside a body
 
@@ -206,6 +226,7 @@ Your Java, plus what is already in scope:
 | In scope | What it is |
 |---|---|
 | `actual`, `prev` | the window's new and previous value |
+| `$indicator` | the name of the indicator this window is attached to, as a `String` |
 | `store` | the per-instrument `StateStore`, shared by every window of that instrument |
 | `price` (ticker), `price open high low close volume` (kline), `rate` (funding) | the current values, as plain variables |
 | `value("name")` | any other indicator's current value |
@@ -247,14 +268,21 @@ strategy is running is reported the same way, on the line the body came from:
 QTScript line 6: Index 2 out of bounds for length 1
 ```
 
+**A `200` from registering means the source parsed and compiled, not that it will run.** Registering
+does not set the strategy up, so what only shows when it does (a window on an indicator that is not
+registered, for one) is found by **validating** it (`POST /strategy/{id}/validate`), which reports it
+against your file the same way: `QTScript line 4: unknown indicator 'nosuch'`. Validate a strategy you
+have just written before you run it.
+
 Two more things to know:
 
 - **Reserved names.** The keywords (`strategy`, `param`, `instruments`, `init`, `setup`, `window`,
   `kline`, `funding`), the in-scope names above (`price`, `actual`, `store`, …) and the engine's own
   property keys cannot be used as parameter names. You are told which, and why, at compile time.
-- **Size.** A strategy is compiled and stored as one class; a source large enough to exceed the
-  platform's stored-class budget is refused when you register it, with the size in the message,
-  rather than failing later.
+- **Size.** The source is capped at 32 KiB: a larger body is refused with `413` and the API's JSON
+  error, which names the cap. A strategy is also compiled and stored as one class; a source large
+  enough to exceed the platform's stored-class budget is refused when you register it, with the size
+  in the message, rather than failing later.
 
 ## More
 
