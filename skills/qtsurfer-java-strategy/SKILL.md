@@ -278,6 +278,12 @@ only exists inside the listener scope; on the top-level strategy use
 `signal.set(...)` also accepts a varargs market-data style for the `_m` chart marker, e.g.
 `signal.set("_m", "position", "belowBar", "shape", "arrowUp", "color", "#26a69a", "text", "BUY")`.
 
+Everything you `set` on a signal is its `data`, and in a live run it is published with the signal:
+whoever may read the run may read it, so on a `public` run it is public. Put nothing there you would not
+show a stranger. A signal whose `data` is over 8 KiB (8,192 bytes of its JSON) is not pushed on the
+WebSocket channel (`GET /live/{runId}/signals` still returns it whole), so keep it to the few fields a
+reader needs.
+
 Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
 `signal.getInstrument()`. Prefix a field's name with `_` to keep it out of reporting metadata.
 
