@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-java-strategy`: what goes in a signal's `data` is public on a public run, and is bounded.** A short paragraph in
+  "Data / analytics signals" says that everything set on a signal is its `data` and is published with it, so whoever may read a run
+  may read it (on a `public` run, anyone), and that a signal whose `data` is over 8 KiB is not pushed on the WebSocket channel
+  but is still returned whole by the history route.
 - **`qtsurfer-qtscript-strategy` 1.1.0: windows on a call that publishes several names, `$indicator`, and what a `200` means.**
   The skill said an inline window could not be written on `bollinger(20, 2)`; it can: the window attaches to the
   middle band and `actual` is its value. It now documents `$indicator`, the name of the indicator a window is attached to (how a
