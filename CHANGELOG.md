@@ -14,8 +14,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `CommandRequestHandler`, when `handle` runs relative to `update()`, and says a command is always a plain string
   and is transient — not replayed to a replica across a restart, unlike a `@StrategyProperty` value. A strategy that
   does not implement the interface answers every command with a `409`.
+- **`qtsurfer-qtscript-strategy`: `onCommand { }`, handling a command.** A new section, at most one per file, lets a
+  QTScript strategy implement `CommandRequestHandler` the same way a Java strategy does: `$command` holds the
+  command's text inside its body, nothing a window body has (`actual`, `$indicator`, `value(...)`, `store`) is in
+  scope, and every `param` stays readable and settable. Added to the reserved-names list and the frontmatter
+  description. A strategy with no `onCommand { }` answers every command with a `409`, same as Java.
 
 ### Changed 🔄
+
+- **`qtsurfer-java-strategy`: "Receiving commands" now says QTScript can do it too.** A one-paragraph
+  cross-reference: a QTScript strategy implements `CommandRequestHandler` through its own `onCommand { }`
+  section (see `qtsurfer-qtscript-strategy`), recognized by the platform the same way a hand-written Java
+  class is.
 
 - **`qtsurfer-java-strategy`: what goes in a signal's `data` is public on a public run, and is bounded.** A short paragraph in
   "Data / analytics signals" says that everything set on a signal is its `data` and is published with it, so whoever may read a run

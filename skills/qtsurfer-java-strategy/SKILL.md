@@ -268,6 +268,10 @@ Anything the strategy needs to remember across a restart belongs in a parameter 
 A run whose strategy does not implement `CommandRequestHandler` answers every command with a `409` —
 implementing the interface is what makes `POST /live/{runId}/commands` do anything at all.
 
+A QTScript strategy implements it too, through its own `onCommand { }` section (see the
+`qtsurfer-qtscript-strategy` skill) — the platform recognizes the generated class as
+`CommandRequestHandler` the same way it recognizes this one.
+
 ## Signal emission
 
 Two overloads, and which one is in scope depends on where you're calling from — mixing them up

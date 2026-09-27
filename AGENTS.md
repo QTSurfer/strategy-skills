@@ -25,7 +25,7 @@ for what goes inside a body:
 
 ```
 skills/qtsurfer-qtscript-strategy/
-  SKILL.md                 <- the language (header, param, init, instruments, setup:, windows)
+  SKILL.md                 <- the language (header, param, init, instruments, setup:, windows, onCommand)
   references/examples.md   <- complete .qtscript strategies, one per data source
 ```
 
