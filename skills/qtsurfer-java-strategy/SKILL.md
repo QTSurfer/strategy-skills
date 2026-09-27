@@ -233,6 +233,41 @@ setter, and a property with neither is reported as a notice rather than silently
 `min`, `max` and `step` on the annotation are advisory range hints a sweep's parameter grid can
 read — not validated against, just a suggested range for pre-filling one.
 
+## Receiving commands
+
+A live run's owner can tell it a command from outside — `POST /live/{runId}/commands` with `{"command": "<text>"}` — while it
+keeps running, without restarting it. To act on one, implement `CommandRequestHandler`:
+
+```java
+import com.wualabs.qtsurfer.engine.strategy.event.request.CommandRequest;
+import com.wualabs.qtsurfer.engine.strategy.event.request.CommandRequestHandler;
+
+public class MyStrategy extends AbstractTickerStrategy implements CommandRequestHandler {
+
+    @Override
+    public void handle(CommandRequest request) {
+        if ("flatten".equals(request.getCommand())) {
+            // close the position, cancel pending orders, whatever "flatten" means for this strategy
+        }
+    }
+}
+```
+
+`handle` runs on the same thread as `update()`, right before the market event the command targets, so it sees the strategy's
+state exactly as it was at that point and can call anything `update()` can — read indicators, emit a signal, change internal
+fields. A `RuntimeException` it throws is caught and counted, the same as one from `update()`; an `Error` unwinds the run.
+
+**A command is always a plain string, and it is transient.** There is no structured payload yet — a
+later addition will let a command carry a key/value map alongside its text, under its own name (not
+`params`, which stays what a run starts with and `PUT /live/{runId}/params` changes). And unlike a
+`@StrategyProperty` value, a command is not stored as part of the run: a replica that restarts replays
+only the last stretch of market data, and a command from before that window simply never reaches it.
+Anything the strategy needs to remember across a restart belongs in a parameter it sets from inside
+`handle`, not in the fact that a command was once sent.
+
+A run whose strategy does not implement `CommandRequestHandler` answers every command with a `409` —
+implementing the interface is what makes `POST /live/{runId}/commands` do anything at all.
+
 ## Signal emission
 
 Two overloads, and which one is in scope depends on where you're calling from — mixing them up
@@ -381,4 +416,7 @@ misbehaves is far easier to diagnose when the engine it ran on is recorded along
   `AbstractWindowListener`; everywhere else (`update()`, helper methods) it's
   `emitBuy(instrument, price)` (see [Signal emission](#signal-emission)).
 - **Using JavaBean getters on Ticker** — `Ticker` is a record; use `ticker.last()` not `ticker.getLast()`, `ticker.instrument()` not `ticker.getInstrument()`, `ticker.timestamp()` not `ticker.getTimestamp().getTime()`.
+- **Treating a command as stored state** — a command is transient (see [Receiving commands](#receiving-commands)):
+  it is not replayed to a replica across a restart. Anything that must survive one belongs in a parameter, set from
+  inside `handle`, not in the command itself.
 

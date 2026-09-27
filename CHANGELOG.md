@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added ✨
+
+- **`qtsurfer-java-strategy`: receiving commands.** A live run's owner can now tell it a command from outside
+  (`POST /live/{runId}/commands`) without restarting it. A new "Receiving commands" section shows implementing
+  `CommandRequestHandler`, when `handle` runs relative to `update()`, and says a command is always a plain string
+  and is transient — not replayed to a replica across a restart, unlike a `@StrategyProperty` value. A strategy that
+  does not implement the interface answers every command with a `409`.
+
 ### Changed 🔄
 
 - **`qtsurfer-java-strategy`: what goes in a signal's `data` is public on a public run, and is bounded.** A short paragraph in
