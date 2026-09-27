@@ -12,12 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`qtsurfer-java-strategy`: a command's `properties` land as top-level entries on `CommandRequest`,
   not nested under their own `properties` key.** The `getStateStore(...)` example read
   `Map<String, Object> properties = request.get("properties"); properties.get("instrument")` — a real
-  design error, not wording: `CommandRequest` is already a map, and the runner puts every property
-  directly on it, so the correct read is `request.get("instrument")`. Corrected, along with a note
-  that a value keeps its JSON type (so assigning a non-string one to a `String` throws
-  `ClassCastException`) and that `cmd` is reserved for the command's own text and rejected with `400`.
-  `qtsurfer-qtscript-strategy` needed no change: its `$command.<key>` section was already written
-  abstractly enough to stay correct.
+  design error, not wording: the runner puts every property directly on the request's own map, so the
+  correct read is `request.get("instrument")`. Corrected, along with a note that a value keeps its
+  JSON type (so assigning a non-string one to a `String` throws `ClassCastException`). The command's
+  own text is kept as its own field, separate from `properties` entirely, so no property name is off
+  limits — `cmd` included. `qtsurfer-qtscript-strategy` needed no change: its `$command.<key>` section
+  was already written abstractly enough to stay correct.
 
 ### Added ✨
 
