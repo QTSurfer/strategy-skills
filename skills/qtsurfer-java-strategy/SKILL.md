@@ -261,8 +261,8 @@ fields. A `RuntimeException` it throws is caught and counted, the same as one fr
 of your own choosing, alongside `command` in the request body — not `params`, which stays what a run
 starts with and `PUT /live/{runId}/params` changes. Each property lands as a top-level entry on
 `CommandRequest`'s own map, so read one straight off `request` by name — `request.get("<key>")` — no
-key is off limits, since the command's own text is kept separately (`getCommand()` reads it from its
-own field, not from this map). A value keeps whatever JSON type it arrived as, so assigning it to a
+key is off limits, since the command's own text is kept separately (`getCommand()` reads it,
+unaffected by any of it). A value keeps whatever JSON type it arrived as, so assigning it to a
 `String` field when the caller sent a number or an object throws a `ClassCastException` inside
 `handle`; QTScript's `$command.<key>` sugar reads the same value but always widens it to a `String`
 instead. A command, and its properties, are not stored as part of the run: a replica that restarts
