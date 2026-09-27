@@ -264,6 +264,20 @@ carried none — under its own name, not `params`, which stays what a run starts
 replica that restarts replays only the last stretch of market data, and a command from before that
 window simply never reaches it.
 
+A command has no instrument attached the way `update()` does; when its own properties name one, reach
+that instrument's store with `getStateStore(String)`:
+
+```java
+@Override
+public void handle(CommandRequest request) {
+    Map<String, Object> properties = request.get("properties");
+    String instrument = properties != null ? (String) properties.get("instrument") : null;
+    if (instrument != null) {
+        getStateStore(instrument).set("flattened");
+    }
+}
+```
+
 **Assigning a `@StrategyProperty` field from inside `handle` is not durable.** It changes this
 replica's in-memory value immediately, the same as any other field assignment, but nothing writes it to
 the run's stored parameter set — a replica that restarts (or one that starts later, and never ran

@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `CommandRequestHandler`, when `handle` runs relative to `update()`, and says a command is always a plain string
   and is transient — not replayed to a replica across a restart, unlike a `@StrategyProperty` value. A strategy that
   does not implement the interface answers every command with a `409`.
+- **`qtsurfer-java-strategy`: an example for `getStateStore(...)` from inside a command.** A second code example
+  in "Receiving commands" shows reading `request.get("properties")` for an instrument name and reaching that
+  instrument's store with `getStateStore(String)` — the same example `docs/strategy_coding.md` (qtsurfer-api)
+  already carries, so the two stay in sync.
 - **`qtsurfer-qtscript-strategy`: `onCommand { }`, handling a command.** A new section, at most one per file, lets a
   QTScript strategy implement `CommandRequestHandler` the same way a Java strategy does: `$command` holds the
   command's text inside its body, nothing a window body has (`actual`, `$indicator`, `value(...)`, `store`) is in
