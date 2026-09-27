@@ -1,6 +1,6 @@
 ---
 name: qtsurfer-qtscript-strategy
-description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, setup:, windows) instead of a Java class, or when reading QTScript compile and run-time errors. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
+description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
   version: 1.1.0
@@ -106,6 +106,44 @@ Plain Java, run once when the strategy is built: engine setters and your own ini
 **Do not assign a `param` here.** Declared defaults are applied after construction, and run-time
 values later still, so an assignment in `init` is overwritten without a word. Anything that depends
 on a parameter belongs in `setup:` or in a window body; a compile-time warning points at it.
+
+## `onCommand { }` — handling a command, optional
+
+```
+onCommand {
+  if ("flatten".equals($command)) {
+    // close the position, cancel pending orders, whatever "flatten" means for this strategy
+  }
+}
+```
+
+A live run's owner can tell it a command from outside — `POST /live/{runId}/commands` with
+`{"command": "<text>"}` — while it keeps running, without restarting it (see "Receiving commands" in
+the `qtsurfer-java-strategy` skill for the full contract). `onCommand { }` is how a QTScript strategy
+acts on one: at most one per file, plain Java, run once per command rather than once per market event.
+It has no period and no indicator — it is not a window, the same way `init { }` is not one.
+
+Inside its body, `$command` is the command's text, as a `String`. Nothing a window body has —
+`actual`, `$indicator`, `value(...)`, `store` — is in scope, because a command is not tied to a market
+tick or an instrument. Every `param` is readable and settable, so `onCommand` is how an
+already-running strategy changes its own behavior on demand:
+
+```
+strategy "Manual flatten"
+
+param flattened = false "Set by a flatten command"
+
+onCommand {
+  if ("flatten".equals($command)) {
+    flattened = true;
+  }
+}
+```
+
+A strategy with no `onCommand { }` does not implement `CommandRequestHandler`, so
+`POST /live/{runId}/commands` answers every command sent to one of its runs with a `409`. A command is
+always a plain string and is transient, exactly as in Java — see "Receiving commands" in the
+`qtsurfer-java-strategy` skill for what that means across a restart.
 
 ## `instruments` — which markets, optional
 
@@ -277,8 +315,9 @@ have just written before you run it.
 Two more things to know:
 
 - **Reserved names.** The keywords (`strategy`, `param`, `instruments`, `init`, `setup`, `window`,
-  `kline`, `funding`), the in-scope names above (`price`, `actual`, `store`, …) and the engine's own
-  property keys cannot be used as parameter names. You are told which, and why, at compile time.
+  `kline`, `funding`, `onCommand`), the in-scope names above (`price`, `actual`, `store`, `$command`, …)
+  and the engine's own property keys cannot be used as parameter names. You are told which, and why,
+  at compile time.
 - **Size.** The source is capped at 32 KiB: a larger body is refused with `413` and the API's JSON
   error, which names the cap. A strategy is also compiled and stored as one class; a source large
   enough to exceed the platform's stored-class budget is refused when you register it, with the size
