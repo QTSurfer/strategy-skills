@@ -257,13 +257,21 @@ public class MyStrategy extends AbstractTickerStrategy implements CommandRequest
 state exactly as it was at that point and can call anything `update()` can — read indicators, emit a signal, change internal
 fields. A `RuntimeException` it throws is caught and counted, the same as one from `update()`; an `Error` unwinds the run.
 
-**A command is always a plain string, and it is transient.** There is no structured payload yet — a
-later addition will let a command carry a key/value map alongside its text, under its own name (not
-`params`, which stays what a run starts with and `PUT /live/{runId}/params` changes). And unlike a
-`@StrategyProperty` value, a command is not stored as part of the run: a replica that restarts replays
-only the last stretch of market data, and a command from before that window simply never reaches it.
-Anything the strategy needs to remember across a restart belongs in a parameter it sets from inside
-`handle`, not in the fact that a command was once sent.
+**A command is always a plain string, and it is transient.** It may also carry a `properties` object
+of your own choosing — `request.get("properties")`, a `Map<String, Object>`, or `null` when the command
+carried none — under its own name, not `params`, which stays what a run starts with and
+`PUT /live/{runId}/params` changes. A command, and its properties, are not stored as part of the run: a
+replica that restarts replays only the last stretch of market data, and a command from before that
+window simply never reaches it.
+
+**Assigning a `@StrategyProperty` field from inside `handle` is not durable.** It changes this
+replica's in-memory value immediately, the same as any other field assignment, but nothing writes it to
+the run's stored parameter set — a replica that restarts (or one that starts later, and never ran
+`handle` for that command) starts from whatever `PUT /live/{runId}/params` last set, not from what a
+command assigned. `StateStore` is no more durable: it is memory too, gone on a restart the same as a
+field. Nothing a command does from inside `handle` survives a restart on its own — the only durable
+write is a real `PUT /live/{runId}/params` call, from outside the run (a strategy cannot call its own
+REST API from inside `handle`).
 
 A run whose strategy does not implement `CommandRequestHandler` answers every command with a `409` —
 implementing the interface is what makes `POST /live/{runId}/commands` do anything at all.
