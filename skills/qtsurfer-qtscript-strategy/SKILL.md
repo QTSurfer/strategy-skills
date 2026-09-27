@@ -124,18 +124,25 @@ acts on one: at most one per file, plain Java, run once per command rather than 
 It has no period and no indicator — it is not a window, the same way `init { }` is not one.
 
 Inside its body, `$command` is the command's text, as a `String`. Nothing a window body has —
-`actual`, `$indicator`, `value(...)`, `store` — is in scope, because a command is not tied to a market
-tick or an instrument. Every `param` is readable and settable, so `onCommand` is how an
-already-running strategy changes its own behavior on demand:
+`actual`, `$indicator`, `value(...)`, the ambient `store` — is in scope, because a command is not tied
+to a market tick or, unlike a window, to one instrument already chosen for you. Every `param` is
+readable and settable.
+
+A command may carry a `properties` object of your own choosing, alongside `command` in the request
+body. Read a value from it with `$command.<key>` — a `String`, `null` when the command carried no such
+key. `$command.<key>` fires only when `<key>` is not itself a call, so `$command.equals(...)`,
+`$command.startsWith(...)` and the rest still read as ordinary `String` methods on `$command` itself.
+
+A window body gets its instrument's `store` handed to it; `onCommand` does not, since a command names
+no instrument on its own — but `getStateStore("<symbol>")` takes one directly, so a command whose own
+properties name an instrument can still reach that instrument's store:
 
 ```
 strategy "Manual flatten"
 
-param flattened = false "Set by a flatten command"
-
 onCommand {
   if ("flatten".equals($command)) {
-    flattened = true;
+    getStateStore($command.instrument).set("flattened");
   }
 }
 ```
@@ -143,7 +150,12 @@ onCommand {
 A strategy with no `onCommand { }` does not implement `CommandRequestHandler`, so
 `POST /live/{runId}/commands` answers every command sent to one of its runs with a `409`. A command is
 always a plain string and is transient, exactly as in Java — see "Receiving commands" in the
-`qtsurfer-java-strategy` skill for what that means across a restart.
+`qtsurfer-java-strategy` skill for what that means across a restart. Setting a `param` or writing to a
+`StateStore` from inside `onCommand` both take effect immediately, but neither survives a restart: a
+`StateStore` is memory, gone on a restart the same as a field. Only `PUT /live/{runId}/params` writes
+something a restarted replica actually starts from. `getStateStore(...)` here is not about durability —
+it is how `onCommand` reaches the per-instrument state a window body already reads, since a command
+carries no instrument of its own.
 
 ## `instruments` — which markets, optional
 

@@ -19,6 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   command's text inside its body, nothing a window body has (`actual`, `$indicator`, `value(...)`, `store`) is in
   scope, and every `param` stays readable and settable. Added to the reserved-names list and the frontmatter
   description. A strategy with no `onCommand { }` answers every command with a `409`, same as Java.
+- **`qtsurfer-qtscript-strategy`: `$command.<key>`, reading a command's own `properties`.** A command may carry a
+  `properties` object alongside its text; `$command.<key>` reads a value from it as a `String` (`null` when
+  absent), and only fires when `<key>` is not itself a call, so `$command.equals(...)` and the like still read as
+  real `String` methods. `getStateStore("<symbol>")` is now reachable from `onCommand`, which has no instrument of
+  its own the way a window body does — a command whose properties name one can still reach its store.
 
 ### Changed 🔄
 
@@ -26,6 +31,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   cross-reference: a QTScript strategy implements `CommandRequestHandler` through its own `onCommand { }`
   section (see `qtsurfer-qtscript-strategy`), recognized by the platform the same way a hand-written Java
   class is.
+- **`qtsurfer-java-strategy`: "Receiving commands" documents `properties`, and corrects a durability claim.**
+  A command may now carry a `properties` object (`request.get("properties")`, a `Map<String, Object>` or
+  `null`). The skill previously said a value a command sets belongs "in a parameter it sets from inside
+  `handle`" to survive a restart — wrong: assigning a `@StrategyProperty` field from inside `handle` only
+  changes this replica's in-memory value, the same as a `StateStore` write, and neither is written to the
+  run's stored parameter set. Only a real `PUT /live/{runId}/params` call, from outside the run, is durable.
+- **`qtsurfer-qtscript-strategy`: the same durability correction.** "Handling a command" no longer implies a
+  `StateStore` survives a restart; it does not (plain memory, same as a field) — only
+  `PUT /live/{runId}/params` does.
 
 - **`qtsurfer-java-strategy`: what goes in a signal's `data` is public on a public run, and is bounded.** A short paragraph in
   "Data / analytics signals" says that everything set on a signal is its `data` and is published with it, so whoever may read a run
