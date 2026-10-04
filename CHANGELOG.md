@@ -40,9 +40,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   absent), and only fires when `<key>` is not itself a call, so `$command.equals(...)` and the like still read as
   real `String` methods. `getStateStore("<symbol>")` is now reachable from `onCommand`, which has no instrument of
   its own the way a window body does — a command whose properties name one can still reach its store.
+- **`qtsurfer-java-strategy`: a "Language level" section.** Strategy code is ordinary modern Java: lambdas, method
+  references, `var`, records, switch expressions, pattern matching for `instanceof`, text blocks and `+` between
+  strings compile and run. Checked on a running platform with a strategy that uses a lambda listener, `var` and a
+  record through a backtest, and with one-method strategies for each of the others.
+- **`qtsurfer-java-strategy`: a window listener can be a lambda.** `window(...)` takes the engine's
+  `OnChangeListener`, a functional interface with the same `onChange(store, prev, actual)`, so a listener that only
+  needs the `StateStore` is a lambda; `AbstractWindowListener` is for the helpers (`emitBuy(price)`,
+  `getPrevInstant()`, …). A short example (consecutive minutes a long EMA rose) and what `prev` and `actual` are.
+- **`qtsurfer-java-strategy`: keeping the stored signals when `update()` is overridden.** A strategy that replaces
+  `super.update(ticker)` with `updateInstrument` plus `updateIndicators` trades normally, but a backtest run with
+  `storeSignals` comes back with no signals (`signalCount: 0`) — no indicator series and no buy/sell markers. The
+  section "Reading indicator values outside a listener" now says so and shows the form that keeps them: call
+  `super.update(ticker)` and read the indicators with `getRTIndicator(instrument, name)`.
+- **`qtsurfer-java-strategy`: `min`, `max` and `step` written as decimals.** They are `double` annotation elements;
+  an integer literal (`min = 1`) registers without an error, drops the range from the declared properties, fails
+  `validate` and makes a backtest of the strategy fail without a message. Documented in "Configurable properties"
+  and "Common mistakes".
 
 ### Changed 🔄
 
+- **`qtsurfer-java-strategy`: "Common mistakes" no longer says to prefer an inner class over a lambda for a listener.**
+  Replaced by when each fits, and two new entries for the two traps above (`updateIndicators` instead of
+  `super.update`, `min = 1`). The `README.md` line that said inner classes must extend `AbstractWindowListener` now
+  describes both forms.
 - **`qtsurfer-java-strategy`: "Receiving commands" now says QTScript can do it too.** A one-paragraph
   cross-reference: a QTScript strategy implements `CommandRequestHandler` through its own `onCommand { }`
   section (see `qtsurfer-qtscript-strategy`), recognized by the platform the same way a hand-written Java
