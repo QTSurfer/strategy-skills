@@ -63,6 +63,13 @@ public ExecutionMode getExecutionMode(Instrument instrument) {
 > output currency / `acceptCurrency`. To accept **every** instrument unconditionally, override it
 > explicitly with `return true`.
 
+## Language level
+
+Strategy code is ordinary modern Java. Lambdas, method references, `var`, records, switch expressions,
+pattern matching for `instanceof` and text blocks compile and run, and so does `+` between strings. A window
+listener that only needs the `StateStore` and the two values can be a lambda (see
+[Window listener pattern](#window-listener-pattern-recommended)); the examples below use whichever reads best.
+
 ## Indicator setup
 
 All indicators are defined in `setupIndicators` using the fluent builder on `InstrumentGroupRTIndicator`. Methods return `this` for chaining.
@@ -111,6 +118,28 @@ public void update(Ticker ticker) {
 
 `Ticker` is an engine record — read fields with accessor methods: `ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`.
 
+**`updateIndicators(...)` on its own publishes nothing.** It advances this instrument's indicators, but the
+indicator series and the buy/sell markers that a backtest keeps with `storeSignals` come from the signals
+`super.update(ticker)` emits. A strategy that overrides `update()` and calls `updateIndicators` itself trades
+normally and leaves the stored signals empty (`signalCount: 0`). To keep them, call `super.update(ticker)` first
+— it already does `updateInstrument` and `updateIndicators` — and read the indicators with
+`getRTIndicator(instrument, name)`, which does not update them a second time:
+
+```java
+@Override
+public void update(Ticker ticker) {
+    super.update(ticker);                      // advances the indicators and publishes their signals
+    Instrument instrument = ticker.instrument();
+
+    var emaSlow = getRTIndicator(instrument, "emaSlow");
+    var emaFast = getRTIndicator(instrument, "emaFast");
+    if (emaSlow.isEmpty() || emaFast.isEmpty() || !emaSlow.get().isReady()) return; // wait for warmup
+
+    if (emaFast.get().getValue() > emaSlow.get().getValue()) emitBuy(instrument, ticker.last());
+    else                                                       emitSell(instrument, ticker.last());
+}
+```
+
 ## Window listener pattern (recommended)
 
 Listeners fire once per time window rather than on every tick. Prefer this over `update()` for strategies that react to bar closes.
@@ -157,6 +186,21 @@ public class MyStrategy extends AbstractTickerStrategy {
 
 Crossover detection is a standalone helper, not a method on the listener — see
 [Crossover detection helper](#crossover-detection-helper) below.
+
+**A listener that only needs the store can be a lambda.** `window(...)` takes the engine's `OnChangeListener`, a
+functional interface with the same `onChange(store, prev, actual)`; `prev` is the indicator's value when the previous
+window closed and `actual` its value now. Extend `AbstractWindowListener` only when the listener needs the helpers
+listed above (`emitBuy(price)`, `getPrevInstant()`, …).
+
+```java
+indicators
+    .addPrice()
+    .ema("emaLong", 1800)
+    .window("emaLong", WindowTime.m1, (store, prev, actual) -> {
+        int rising = store.getState("risingMinutes", 0);
+        store.setState("risingMinutes", actual > prev ? rising + 1 : 0);   // consecutive minutes the EMA rose
+    });
+```
 
 `store` arrives as `onChange`'s first parameter — already resolved, nothing to initialise. It's
 the same store every listener on this instrument shares (see [State management](#state-management)
@@ -232,6 +276,10 @@ setter, and a property with neither is reported as a notice rather than silently
 
 `min`, `max` and `step` on the annotation are advisory range hints a sweep's parameter grid can
 read — not validated against, just a suggested range for pre-filling one.
+
+**Write `min`, `max` and `step` as decimals — `1.0`, not `1` — even on an integer property.** They are
+`double` elements, and an integer literal there is registered without an error: the range is dropped from the
+declared properties, `validate` fails, and a backtest of the strategy fails without saying why.
 
 ## Receiving commands
 
@@ -441,7 +489,12 @@ misbehaves is far easier to diagnose when the engine it ran on is recorded along
 - **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
 - **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
-- **Inner class vs lambda for listeners** — `AbstractWindowListener` gives access to helpers; prefer inner class over raw lambda.
+- **Class or lambda for a listener** — a lambda is fine when the listener only uses the `StateStore`, `prev` and
+  `actual`; extend `AbstractWindowListener` when it needs `emitBuy(price)`, `getPrevInstant()` or the other helpers.
+- **Calling `updateIndicators(...)` instead of `super.update(ticker)`** — the strategy trades, but a backtest's
+  `storeSignals` comes back empty. Call `super.update(ticker)` and read the indicators with `getRTIndicator(...)`
+  (see [Reading indicator values outside a listener](#reading-indicator-values-outside-a-listener)).
+- **`min = 1` on `@StrategyProperty`** — write `1.0` (see [Configurable properties](#configurable-properties)).
 - **`emitBuy(price)` outside a window listener** — that single-argument overload only exists on
   `AbstractWindowListener`; everywhere else (`update()`, helper methods) it's
   `emitBuy(instrument, price)` (see [Signal emission](#signal-emission)).
