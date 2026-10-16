@@ -18,6 +18,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   own text is kept as its own field, separate from `properties` entirely, so no property name is off
   limits — `cmd` included. `qtsurfer-qtscript-strategy` needed no change: its `$command.<key>` section
   was already written abstractly enough to stay correct.
+- **`qtsurfer-java-strategy` and `qtsurfer-qtscript-strategy`: a kline run can be prepared at any of the fifteen
+  cadence labels, not eight.** Both skills listed `1s`, `1m`, `5m`, `15m`, `30m`, `1h`, `4h` and `1d` as the
+  cadences of a kline run and implied the rest are refused. The service accepts the same labels for klines as
+  for tickers (`1s` up to `1q`: `5s`, `3m`, `8h` and `1w` among them) and refuses only a label that is not a
+  whole number of seconds. Both skills now say so, in the same words.
 
 ### Added ✨
 
