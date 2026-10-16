@@ -67,8 +67,8 @@ source, and maps to the base class you would otherwise have extended (ticker, kl
 — see *Strategy base classes* in the `qtsurfer-java-strategy` skill).
 
 `kline` never takes an interval: the bar width is not part of the strategy. You choose it when you
-prepare the data for a run — the `cadence` of the prepare request: `1s` (the default), `1m`, `5m`,
-`15m`, `30m`, `1h`, `4h` or `1d` — and the same file can be run at several cadences. The
+prepare the data for a run — the `cadence` of the prepare request: `1s` (the default) up to `1q`, the same labels as for
+tickers (`5s`, `3m`, `8h` and `1w` among them) — and the same file can be run at several cadences. The
 multi-source base is not offered, matching what the public backtest path runs.
 
 **What can be run today.** `ticker` and `kline` strategies can be executed, swept and
