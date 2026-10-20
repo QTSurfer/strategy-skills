@@ -124,8 +124,9 @@ out with that import. Read each indicator from it by name: `getReadOnlyExisting(
 which is what code that only reads values wants, and `getExisting(name)` returns the live indicator; both throw
 if the name is not registered. Do not type the map as `RichRTIndicator`, the interface for writing an indicator
 of your own: the map does not implement it, `POST /strategy` answers `400` with `incompatible types`, and the
-`cannot find symbol` for `getExisting(String)` that follows looks like a missing method but only reflects the
-wrong type. `RTIndicator` compiles, since the map is one, but it hides `getExisting` and `getReadOnlyExisting`,
+`cannot find symbol` for `getExisting(String)` that follows is a consequence of it, not a missing method, and the
+answer says so under it. Each diagnostic of a Java source begins with `Line N, Column M:` of the file you sent.
+`RTIndicator` compiles, since the map is one, but it hides `getExisting` and `getReadOnlyExisting`,
 which only the map has.
 
 **`updateIndicators(...)` on its own publishes nothing.** It advances this instrument's indicators, but the

@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`qtsurfer-java-strategy`: what `updateIndicators(...)` returns, and the warning that contradicted the
   examples.** It returns the instrument's indicator map, an `InstrumentMapRTIndicator`, not an indicator. The
   skill now says so, with the import, and why typing it `RichRTIndicator` is rejected with `incompatible types`
-  followed by a `cannot find symbol` for `getExisting(String)` that looks like a missing method. The "Common
+  followed by a `cannot find symbol` for `getExisting(String)`, a consequence that the answer marks as such, and
+  that a Java diagnostic begins with `Line N, Column M:`. The "Common
   mistakes" entry told readers to use `getReadOnlyExisting()` instead of `getExisting()`, while the skill's own
   examples called `getExisting(...)`; the examples now read through `getReadOnlyExisting(...)`.
 - **`qtsurfer-java-strategy`: the `InfoStrategySignal` import.** The examples named the type without its import.
