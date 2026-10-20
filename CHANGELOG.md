@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed 🩹
 
+- **`qtsurfer-java-strategy`: what `updateIndicators(...)` returns, and the warning that contradicted the
+  examples.** It returns the instrument's indicator map, an `InstrumentMapRTIndicator`, not an indicator. The
+  skill now says so, with the import, and why typing it `RichRTIndicator` is rejected with `incompatible types`
+  followed by a `cannot find symbol` for `getExisting(String)`, a consequence that the answer marks as such, and
+  that a Java diagnostic begins with `Line N, Column M:`. The "Common
+  mistakes" entry told readers to use `getReadOnlyExisting()` instead of `getExisting()`, while the skill's own
+  examples called `getExisting(...)`; the examples now read through `getReadOnlyExisting(...)`.
+- **`qtsurfer-java-strategy`: the `InfoStrategySignal` import.** The examples named the type without its import.
+  It is in `com.wualabs.qtsurfer.engine.strategy.event.signal`, next to `BuySignal`.
+- **`qtsurfer-java-strategy`: the `pro` example no longer reads as copyable.** `references/indicators.md` showed
+  `statistics.pro.ZScoreRTIndicator` imported into a strategy. A strategy that is submitted cannot import a `pro`
+  class (`400`, `package … does not exist`); the example says so and marks the line.
 - **`qtsurfer-java-strategy`: a command's `properties` land as top-level entries on `CommandRequest`,
   not nested under their own `properties` key.** The `getStateStore(...)` example read
   `Map<String, Object> properties = request.get("properties"); properties.get("instrument")` — a real
@@ -26,6 +38,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` and `qtsurfer-java-strategy`: the window hands you the previous value.** `prev` is
+  the value the indicator had when the previous window closed, so a crossing or a true range needs nothing kept in
+  the store. A section and two examples in each skill — the RSI climbing back through a level, and the true range of
+  a kline strategy from the previous bar's close — and, for QTScript, the same two as examples 4 and 5. It says what
+  `prev` is on a window's first firing.
+- **`qtsurfer-qtscript-strategy` and `qtsurfer-java-strategy`: sizing.** A strategy emits a price and no quantity;
+  the size of an entry is `percentAmountToLock`, a share of the free balance set in the run's configuration, and
+  left out it is the whole balance in a backtest and 10% in a live run's paper account.
+- **`qtsurfer-qtscript-strategy`: the names that work under `setup:`.** The builder methods a line can call, how a
+  call with the wrong arguments is answered (it lists the forms that exist), and that any other name — `atr`, `wma`,
+  `adx`, `zscore` — is rejected as `unknown indicator`.
 - **`qtsurfer-java-strategy`: receiving commands.** A live run's owner can now tell it a command from outside
   (`POST /live/{runId}/commands`) without restarting it. A new "Receiving commands" section shows implementing
   `CommandRequestHandler`, when `handle` runs relative to `update()`, and says a command is always a plain string

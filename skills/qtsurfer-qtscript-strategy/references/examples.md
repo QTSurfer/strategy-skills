@@ -83,7 +83,43 @@ Trend m5 {
 
 Both bodies write to one store, so `Trend` can leave a value `Oversold` reads on its next close.
 
-## 4. Candle range breakout (kline)
+## 4. Crossing a level with `prev` (ticker)
+
+A window hands you the value the indicator had when the previous window closed as `prev`, so a crossing needs
+nothing in the store. This enters when the RSI climbs back through a level, once, on the window where it
+happens.
+
+```
+strategy "RSI re-entry"
+
+param level = 30 "Level to climb back through"
+
+setup:
+  rsi(14) window m1 {
+    if (prev < level && actual >= level) emitBuy(price);
+  }
+```
+
+The first time a window fires there is no earlier window: `prev` is the value the indicator had when that
+first window opened, and an indicator with a warm-up period has not settled yet. Let the first firings pass
+when the rule needs two real closes.
+
+## 5. True range from the previous close (kline)
+
+On `kline`, a window on `close` gives the previous bar's close as `prev`, which is what the true range needs
+next to the bar's own `high` and `low`.
+
+```
+strategy "True range" kline
+
+setup:
+  window close m1 {
+    double trueRange = Math.max(high - low, Math.max(Math.abs(high - prev), Math.abs(low - prev)));
+    emitInfo("trueRange", trueRange);
+  }
+```
+
+## 6. Candle range breakout (kline)
 
 On `kline` the bar's fields are in scope as plain variables. The bar width is not in the file: it
 is the `cadence` you prepare the data at (`1m`, `1h`, `1d`, …), so the same strategy runs at any of
@@ -103,7 +139,7 @@ setup:
   }
 ```
 
-## 5. Funding rate watch (funding)
+## 7. Funding rate watch (funding)
 
 A strategy that computes rather than trades: `emitInfo` attaches fields to an informational signal.
 On funding there is no price — the value is `rate`. The platform accepts this file and can prepare
@@ -122,7 +158,7 @@ Main m5 {
 The regular expression keeps this to perpetuals quoted and settled in USDT, which is what a funding
 strategy sees.
 
-## 6. An initialiser and the native instrument filter
+## 8. An initialiser and the native instrument filter
 
 `init` for engine setters, and the braced form of `instruments` when a pattern is not enough.
 

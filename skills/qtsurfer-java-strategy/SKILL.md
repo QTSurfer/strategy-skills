@@ -106,7 +106,7 @@ public void update(Ticker ticker) {
     updateInstrument(instrument, ticker.timestamp());
     var ind = updateIndicators(instrument, ticker);
 
-    if (!ind.getExisting("emaSlow").isReady()) return; // wait for warmup
+    if (!ind.getReadOnlyExisting("emaSlow").isReady()) return; // wait for warmup
 
     double fast = ind.getValue("emaFast");
     double slow = ind.getValue("emaSlow");
@@ -117,6 +117,17 @@ public void update(Ticker ticker) {
 ```
 
 `Ticker` is an engine record — read fields with accessor methods: `ticker.last()`, `ticker.bid()`, `ticker.ask()`, `ticker.instrument()`, `ticker.timestamp()`.
+
+**`updateIndicators(...)` returns the instrument's indicator map, not an indicator.** Its type is
+`InstrumentMapRTIndicator` (`com.wualabs.qtsurfer.engine.indicators.helpers.group`): `var` holds it, or spell it
+out with that import. Read each indicator from it by name: `getReadOnlyExisting(name)` returns a read-only view,
+which is what code that only reads values wants, and `getExisting(name)` returns the live indicator; both throw
+if the name is not registered. Do not type the map as `RichRTIndicator`, the interface for writing an indicator
+of your own: the map does not implement it, `POST /strategy` answers `400` with `incompatible types`, and the
+`cannot find symbol` for `getExisting(String)` that follows is a consequence of it, not a missing method, and the
+answer says so under it. Each diagnostic of a Java source begins with `Line N, Column M:` of the file you sent.
+`RTIndicator` compiles, since the map is one, but it hides `getExisting` and `getReadOnlyExisting`,
+which only the map has.
 
 **`updateIndicators(...)` on its own publishes nothing.** It advances this instrument's indicators, but the
 indicator series and the buy/sell markers that a backtest keeps with `storeSignals` come from the signals
@@ -201,6 +212,72 @@ indicators
         store.setState("risingMinutes", actual > prev ? rising + 1 : 0);   // consecutive minutes the EMA rose
     });
 ```
+
+**`prev` makes a crossing, or any comparison with the close before, free of state.** A window fires when its period
+closes, so `prev` is the value the indicator had when the *previous* window closed and `actual` its value now — the
+`close[1]` of other tools; nothing needs keeping in the `StateStore`. Entering when the RSI climbs back through
+30, once, on the window where it happens:
+
+```java
+private class Reentry extends AbstractWindowListener {
+
+    public Reentry(AbstractTickerStrategy strategy, InstrumentGroupRTIndicator indicators) {
+        super(strategy, indicators);
+    }
+
+    @Override
+    public void onChange(StateStore store, double prev, double actual) {
+        if (prev < 30 && actual >= 30) emitBuy(indicators.getValue("price"));
+    }
+}
+// registered with:  indicators.addPrice().rsi(14).window("rsi14", WindowTime.m1, new Reentry(this, indicators));
+```
+
+On a kline strategy a window on `close` hands you the previous bar's close as `prev`, which is what the true range
+needs next to the bar's own `high` and `low`. The bar's fields are indicators too, registered from a
+`KlineValueSource` (`com.wualabs.qtsurfer.engine.indicators.core`):
+
+```java
+public class TrueRange extends AbstractKlineStrategy {
+
+    @Override
+    public KlineInterval getInterval() {            // com.wualabs.qtsurfer.engine.core.KlineInterval
+        return KlineInterval.s1;
+    }
+
+    @Override
+    protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
+        indicators
+            .add("high", KlineValueSource.High)
+            .add("low", KlineValueSource.Low)
+            .add("close", KlineValueSource.Close)
+            .window("close", WindowTime.m1, new Range(this, indicators));
+    }
+
+    private class Range extends AbstractWindowListener {
+
+        public Range(AbstractKlineStrategy strategy, InstrumentGroupRTIndicator indicators) {
+            super(strategy, indicators);
+        }
+
+        @Override
+        public void onChange(StateStore store, double prev, double actual) {
+            double high = indicators.getValue("high");
+            double low = indicators.getValue("low");
+            double trueRange = Math.max(high - low, Math.max(Math.abs(high - prev), Math.abs(low - prev)));
+            emitInfo("trueRange", trueRange);
+        }
+    }
+}
+```
+
+A Java kline strategy has to override `getInterval()`: the base class leaves it abstract, and a source without it is
+rejected. In a backtest the bar width is not what it returns but the `cadence` the data was prepared at, so
+`KlineInterval.s1` serves any run; a QTScript `kline` strategy gets this method written for it.
+
+The first time a window fires there is no earlier window to compare with: `prev` is the value the indicator had
+when that first window opened. A rule that needs two real closes should let the first firing pass, and an
+indicator with a warm-up period, such as an RSI or an EMA, has not settled in its first windows either.
 
 `store` arrives as `onChange`'s first parameter — already resolved, nothing to initialise. It's
 the same store every listener on this instrument shares (see [State management](#state-management)
@@ -361,11 +438,16 @@ fails to compile with a missing-method error, not a runtime one:
 
 For non-trading strategies that emit **computed fields** (analytics, metrics) rather than
 buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`.
-Two constructors, matching the `emitBuy` convention:
+The type is in `com.wualabs.qtsurfer.engine.strategy.event.signal`, next to `BuySignal` and `SellSignal`, and a
+strategy that names it imports it from there — `import com.wualabs.qtsurfer.engine.strategy.event.signal.InfoStrategySignal;`.
+`emitInfo(key, values…)` never names the type and needs no import. Two constructors, matching the `emitBuy`
+convention:
 
 - **Top-level strategy (`update()`) — `createInfoStrategySignal(instrument)`**, instrument explicit:
 
 ```java
+import com.wualabs.qtsurfer.engine.strategy.event.signal.InfoStrategySignal;
+
 InfoStrategySignal signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
 signal.set("interval", "1m");
 signal.set("zscore", z);
@@ -399,6 +481,17 @@ reader needs.
 
 Subscribers read the fields with `signal.get("key")` / `signal.has("key")` and
 `signal.getInstrument()`. Prefix a field's name with `_` to keep it out of reporting metadata.
+
+## Sizing
+
+A strategy says when and which way, not how much. `emitBuy(price)` and `emitSell(price)` carry a price and nothing
+else, and no call puts a quantity or a notional on a signal. The size of each entry is a setting of the run,
+`percentAmountToLock`: the percentage of the account's free balance that an entry locks, above 0 and up to 100.
+
+Where it is given depends on the run: `baseConfig` for a backtest or a sweep, the `paper` block for a paper live
+run. Left out, a backtest puts the whole free balance into each entry (all-in) and a live run's paper account locks
+10%. To see how a strategy behaves at another size, run it again with another `percentAmountToLock`; the class does
+not change.
 
 ## Crossover detection helper
 
@@ -487,7 +580,8 @@ misbehaves is far easier to diagnose when the engine it ran on is recorded along
 ## Common mistakes
 
 - **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
-- **Mutating indicators in `update()`** — use `getReadOnlyExisting()` instead of `getExisting()` to prevent accidental state changes.
+- **Mutating indicators in `update()`** — read through `getReadOnlyExisting()` rather than `getExisting()`, so nothing in `update()` can change a shared indicator by accident (see [Reading indicator values outside a listener](#reading-indicator-values-outside-a-listener)).
+- **Typing what `updateIndicators(...)` returns as an indicator** — it is the indicator map, an `InstrumentMapRTIndicator`; `RichRTIndicator` is rejected with `incompatible types`.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
 - **Class or lambda for a listener** — a lambda is fine when the listener only uses the `StateStore`, `prev` and
   `actual`; extend `AbstractWindowListener` when it needs `emitBuy(price)`, `getPrevInstant()` or the other helpers.

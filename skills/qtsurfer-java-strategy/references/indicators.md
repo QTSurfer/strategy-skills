@@ -139,11 +139,16 @@ tier (`averages`, `momentum`, `distance`, `bollinger`, `statistics`, …) and
 (`averages.pro`, `trend.pro`, `momentum.pro`, `volatility.pro`, `volume.pro`, `statistics.pro`, …) —
 a `pro` package segment is always the paid-tier marker. Pro classes are not shipped in the
 OSS/TypeScript port of the engine. They are plain `RTIndicator` instances — add any of them by
-class with `.add("name", new XxxRTIndicator(...))`, then read with `indicators.getValue("name")`:
+class with `.add("name", new XxxRTIndicator(...))`, then read with `indicators.getValue("name")`.
+
+**A `pro` class cannot be imported by a strategy that is submitted.** The compiler the platform runs does not see
+the paid tier: `import com.wualabs.qtsurfer.engine.indicators.statistics.pro.ZScoreRTIndicator;` is rejected with a
+`400` and `package … does not exist`. The example below shows the shape of the call; its free-tier lines
+(`sma`, `StandardDeviationRTIndicator`) compile, and the `ZScoreRTIndicator` line does not.
 
 ```java
 import com.wualabs.qtsurfer.engine.indicators.statistics.StandardDeviationRTIndicator;
-import com.wualabs.qtsurfer.engine.indicators.statistics.pro.ZScoreRTIndicator;
+import com.wualabs.qtsurfer.engine.indicators.statistics.pro.ZScoreRTIndicator;   // pro: rejected on submission
 
 indicators
     .addPrice()                                                      // "price"
@@ -151,7 +156,7 @@ indicators
     .add("std",    new StandardDeviationRTIndicator(20))             // ctor (int periods)
     .add("stdOf",  new StandardDeviationRTIndicator(                 // ctor (RTIndicator, int periods)
             indicators.getReadOnlyExisting("mean"), 20))
-    .add("zscore", new ZScoreRTIndicator(/* see class for ctor */));
+    .add("zscore", new ZScoreRTIndicator(/* see class for ctor */));   // pro: rejected on submission
 ```
 
 Constructors vary per class — most take `(int periods)` and/or `(RTIndicator source, int periods)`;

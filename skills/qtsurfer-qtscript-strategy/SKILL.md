@@ -202,9 +202,25 @@ setup:
   bollinger(20, 2)
 ```
 
-Each line is one call on the indicator builder, without the semicolon — the same builder and the
-same indicator catalogue a Java strategy uses (`references/indicators.md` in the
-`qtsurfer-java-strategy` skill). One call per line; a call may not span lines.
+Each line is one call on the indicator builder, without the semicolon — the same builder a Java
+strategy uses (`references/indicators.md` in the `qtsurfer-java-strategy` skill describes its
+catalogue, and what of it a submitted strategy cannot use). One call per line; a call may not span
+lines.
+
+**The names that work** are the builder's methods that take plain values:
+
+`add` `bollinger` `bollingerBandwidth` `cci` `clamp` `conditional` `diff` `distance` `distanceMa` `ema` `equal`
+`gain` `greatOrEqual` `greatThan` `lessOrEqual` `lessThan` `loss` `macd` `max` `min` `mul` `notEqual`
+`percentChange` `rateChange` `round` `rsi` `sma` `stochRsi` `sum`
+
+The arguments each takes are those of the builder (`InstrumentGroupRTIndicator`). A call whose arguments match
+none of them is rejected with the forms that do exist: `ema(1, 2, 3)` answers that its forms are `ema(int)`,
+`ema(String, int)` and `ema(String, String, int)`. The methods that take a function (`predicate`, `fun`,
+`decorate`, `periodCount`) can only be written in Java.
+
+**A name that is not on the list is rejected as `unknown indicator '<name>'`.** `atr`, `wma`, `adx` and `zscore`
+are among the names that answer this way, and so is `value("name")`, which reads an indicator inside a `{ }` body
+and has no meaning on a `setup:` line.
 
 **`setup:` is the one place indentation matters.** Its body is the indented lines that follow it,
 and the first line back at column 0 ends the section.
@@ -244,6 +260,42 @@ Main m1 {
 }
 ```
 
+**The window gives you the previous value.** A window fires when its period closes, so `prev` is the
+value the indicator had when the **previous** window closed and `actual` is its value now — the `close[1]`
+of other tools. A crossing, or anything else that compares one close with the one before, needs nothing
+kept in the `store`: the previous value is already in scope. Entering when the RSI climbs back through a
+level, once, on the window where it happens:
+
+```
+strategy "RSI re-entry"
+
+param level = 30 "Level to climb back through"
+
+setup:
+  rsi(14) window m1 {
+    if (prev < level && actual >= level) emitBuy(price);
+  }
+```
+
+On a `kline` strategy a window on `close` hands you the previous bar's close as `prev`, which is what the
+true range needs next to the bar's own `high` and `low`:
+
+```
+strategy "True range" kline
+
+setup:
+  window close m1 {
+    double trueRange = Math.max(high - low, Math.max(Math.abs(high - prev), Math.abs(low - prev)));
+    emitInfo("trueRange", trueRange);
+  }
+```
+
+The first time a window fires there is no earlier window to compare with: `prev` is the value the
+indicator had when that first window opened. A rule that needs two real closes should let the first firing
+pass, and an indicator with a warm-up period, such as an RSI or an EMA, has not settled in its first
+windows either. Keep the `store` for what a window cannot hand you: a flag, a counter, a value from
+several windows ago.
+
 **A window on a call that publishes several names.** `bollinger(20, 2)` registers three indicators
 under one name: the middle band, `blgr20_2`, and the outer bands, that name followed by `Upper` and
 `Lower`. The inline postfix form attaches to the middle band, so `bollinger(20, 2) window m1 { … }`
@@ -275,7 +327,7 @@ Your Java, plus what is already in scope:
 
 | In scope | What it is |
 |---|---|
-| `actual`, `prev` | the window's new and previous value |
+| `actual`, `prev` | the window's new value and the one it had when the previous window closed |
 | `$indicator` | the name of the indicator this window is attached to, as a `String` |
 | `store` | the per-instrument `StateStore`, shared by every window of that instrument |
 | `price` (ticker), `price open high low close volume` (kline), `rate` (funding) | the current values, as plain variables |
@@ -286,6 +338,18 @@ Your Java, plus what is already in scope:
 
 Every `param` is readable by name, and nothing needs importing: the packages a strategy is allowed
 to use are already in scope.
+
+## Sizing
+
+A strategy says when and which way, not how much. `emitBuy(price)` and `emitSell(price)` carry a price and
+nothing else, and no call puts a quantity or a notional on a signal. The size of each entry is a setting of
+the run, `percentAmountToLock`: the percentage of the account's free balance that an entry locks, above 0 and
+up to 100.
+
+Where it is given depends on the run: `baseConfig` for a backtest or a sweep, the `paper` block for a paper
+live run. Left out, a backtest puts the whole free balance into each entry (all-in) and a live run's paper
+account locks 10%. To see how a strategy behaves at another size, run it again with another
+`percentAmountToLock`; the file does not change.
 
 ## What QTScript does not do
 
