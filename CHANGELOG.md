@@ -15,7 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   followed by a `cannot find symbol` for `getExisting(String)`, a consequence that the answer marks as such, and
   that a Java diagnostic begins with `Line N, Column M:`. The "Common
   mistakes" entry told readers to use `getReadOnlyExisting()` instead of `getExisting()`, while the skill's own
-  examples called `getExisting(...)`; the examples now read through `getReadOnlyExisting(...)`.
+  examples called `getExisting(...)`; the examples now read through `getReadOnlyExisting(...)`. The skill also
+  says what each one is: the view reads the live value and ignores `update(...)` without an error, `getExisting`
+  is the live indicator, and `getRTIndicator(...)` returns the live indicator too, which `references/patterns.md`
+  had called read-only.
 - **`qtsurfer-java-strategy`: the `InfoStrategySignal` import.** The examples named the type without its import.
   It is in `com.wualabs.qtsurfer.engine.strategy.event.signal`, next to `BuySignal`.
 - **`qtsurfer-java-strategy`: the `pro` example no longer reads as copyable.** `references/indicators.md` showed

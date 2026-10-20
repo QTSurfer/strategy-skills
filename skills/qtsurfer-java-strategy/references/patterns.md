@@ -223,5 +223,5 @@ public void update(Ticker ticker) {
 
 Helpers on `AbstractTickerStrategy`:
 - `getInstruments()` — the set of instruments the strategy is tracking.
-- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator (read-only, no re-update).
+- `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator, the live one: reading it does not update it again, and `.map(RTIndicator::ro)` gives a read-only view.
 - Always call `super.update(ticker)` **first** — skip it and the indicators never advance.
