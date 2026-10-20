@@ -120,9 +120,11 @@ public void update(Ticker ticker) {
 
 **`updateIndicators(...)` returns the instrument's indicator map, not an indicator.** Its type is
 `InstrumentMapRTIndicator` (`com.wualabs.qtsurfer.engine.indicators.helpers.group`): `var` holds it, or spell it
-out with that import. Read each indicator from it by name: `getReadOnlyExisting(name)` returns a read-only view,
-which is what code that only reads values wants, and `getExisting(name)` returns the live indicator; both throw
-if the name is not registered. Do not type the map as `RichRTIndicator`, the interface for writing an indicator
+out with that import. Read each indicator from it by name. `getReadOnlyExisting(name)` returns a read-only view: it
+reads the live indicator's value and ignores `update(...)`, without an error, so nothing in `update()` can change a
+shared indicator's value by accident, which is what code that only reads values wants. `getExisting(name)` returns the
+live indicator: an `update` or `reset` called on it changes the series for everyone who reads it, and nothing reports
+it. Both throw if the name is not registered. Do not type the map as `RichRTIndicator`, the interface for writing an indicator
 of your own: the map does not implement it, `POST /strategy` answers `400` with `incompatible types`, and the
 `cannot find symbol` for `getExisting(String)` that follows is a consequence of it, not a missing method, and the
 answer says so under it. Each diagnostic of a Java source begins with `Line N, Column M:` of the file you sent.
@@ -134,7 +136,8 @@ indicator series and the buy/sell markers that a backtest keeps with `storeSigna
 `super.update(ticker)` emits. A strategy that overrides `update()` and calls `updateIndicators` itself trades
 normally and leaves the stored signals empty (`signalCount: 0`). To keep them, call `super.update(ticker)` first
 — it already does `updateInstrument` and `updateIndicators` — and read the indicators with
-`getRTIndicator(instrument, name)`, which does not update them a second time:
+`getRTIndicator(instrument, name)`, which does not update them a second time. It returns the live indicator in an
+`Optional`, not a read-only view; `.map(RTIndicator::ro)` gives the view:
 
 ```java
 @Override
@@ -580,7 +583,7 @@ misbehaves is far easier to diagnose when the engine it ran on is recorded along
 ## Common mistakes
 
 - **Forgetting `isReady()` check** — indicators need warmup periods. Always check before reading values.
-- **Mutating indicators in `update()`** — read through `getReadOnlyExisting()` rather than `getExisting()`, so nothing in `update()` can change a shared indicator by accident (see [Reading indicator values outside a listener](#reading-indicator-values-outside-a-listener)).
+- **Mutating indicators in `update()`** — read through `getReadOnlyExisting()` rather than `getExisting()`, so nothing in `update()` can change a shared indicator's value by accident; `getRTIndicator(...)` also returns the live indicator (see [Reading indicator values outside a listener](#reading-indicator-values-outside-a-listener)).
 - **Typing what `updateIndicators(...)` returns as an indicator** — it is the indicator map, an `InstrumentMapRTIndicator`; `RichRTIndicator` is rejected with `incompatible types`.
 - **One `setupIndicators` per strategy class** — it is called once per instrument, not per tick.
 - **Class or lambda for a listener** — a lambda is fine when the listener only uses the `StateStore`, `prev` and
