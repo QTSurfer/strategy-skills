@@ -548,11 +548,12 @@ basket signal), override `update(Ticker)` and read other instruments' indicators
 `getInstruments()` / `getRTIndicator(...)`. See
 [references/patterns.md](references/patterns.md) → "Cross-instrument (market-wide) strategies".
 
-**A backtest executes only the instrument it was prepared for.** The strategy is fed the other
-instruments and can read them, but a signal it emits on any of them is not booked: no trade, no
-metric, and the run still ends `Completed`. Trade the prepared instrument and use the others as
-inputs. A strategy whose legs sit on several instruments (a triangular arbitrage) cannot fill them
-all in a backtest. A live run takes several instruments.
+**In a backtest the strategy sees only one instrument.** A backtest runs over the instrument it was
+prepared for and feeds the strategy that instrument's ticks alone: `getInstruments()` lists only it,
+so another instrument the strategy accepts never ticks and has no indicators. A strategy that trades
+only some other instrument still ends `Completed`, with no trades and no metrics, and a
+cross-instrument strategy (a market-wide statistic, a triangular arbitrage with a leg on each pair)
+cannot be backtested the way it runs live. A live run takes several instruments.
 
 ## Engine version
 
