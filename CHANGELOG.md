@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed 🩹
 
+- **`qtsurfer-java-strategy`: a backtest executes only the instrument it was prepared for.** The
+  cross-instrument section showed how to read every instrument a strategy accepts, and said nothing about the
+  other half: a signal emitted on any instrument other than the prepared one is not booked, with no trade, no
+  metric and a run that still ends `Completed`. The section, in the skill and in `references/patterns.md`, now says
+  so, and that a strategy with legs on several instruments (a triangular arbitrage) cannot fill them all in a
+  backtest, while a live run takes several instruments.
+
 - **`qtsurfer-java-strategy`: what `updateIndicators(...)` returns, and the warning that contradicted the
   examples.** It returns the instrument's indicator map, an `InstrumentMapRTIndicator`, not an indicator. The
   skill now says so, with the import, and why typing it `RichRTIndicator` is rejected with `incompatible types`

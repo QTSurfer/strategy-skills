@@ -225,3 +225,9 @@ Helpers on `AbstractTickerStrategy`:
 - `getInstruments()` — the set of instruments the strategy is tracking.
 - `getRTIndicator(instrument, name)` → `Optional<RTIndicator>` — any instrument's named indicator, the live one: reading it does not update it again, and `.map(RTIndicator::ro)` gives a read-only view.
 - Always call `super.update(ticker)` **first** — skip it and the indicators never advance.
+
+**A backtest executes only the instrument it was prepared for.** The strategy is fed the other
+instruments and can read them, but a signal it emits on any of them is not booked: no trade, no
+metric, and the run still ends `Completed`. Trade the prepared instrument and use the others as
+inputs. A strategy whose legs sit on several instruments (a triangular arbitrage) cannot fill them
+all in a backtest. A live run takes several instruments.
