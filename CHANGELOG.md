@@ -103,6 +103,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   run on a plan without them is refused with `402 Payment Required`. The skill also lists the forms of each of the
   free names, and `atr` and `adx` are no longer among the names that are always unknown. A new example, 9, uses bands and
   a cloud.
+- **`qtsurfer-java-strategy`: a strategy can use the pro indicators.** The catalogue said that a `pro` class cannot be
+  imported by a submitted strategy and is rejected with a `400`; that is no longer so. A new section, "The pro
+  indicators", has `Pro.on(indicators)` and an example that compiles, the same as the Java guide of the API: the
+  indicators come with the Pro and Elite plans, a strategy that uses them is registered on every plan, and running it on a
+  plan without them is refused with `402 Payment Required`. The paragraph on the `pro` packages now says that any mention
+  of one of their classes counts. `qtsurfer-qtscript-strategy` no longer says that the catalogue lists what a submitted
+  strategy cannot use.
 
 ### Changed 🔄
 
