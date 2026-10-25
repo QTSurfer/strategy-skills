@@ -96,6 +96,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   an integer literal (`min = 1`) registers without an error, drops the range from the declared properties, fails
   `validate` and makes a backtest of the strategy fail without a message. Documented in "Configurable properties"
   and "Common mistakes".
+- **`qtsurfer-qtscript-strategy`: the pro indicators (`uses pro.*`), the forms of the free ones, and the `402` of a plan
+  that lacks them.** A `uses` line brings thirteen more indicators into a file (ADX, ATR, SuperTrend, Ichimoku, VWAP and the
+  rest), with their forms, the ids they register and the errors of a malformed line. They come with the Pro and Elite plans:
+  `POST /strategy` registers on every plan and answers `requires`, and validating, running a backtest, a sweep or a live
+  run on a plan without them is refused with `402 Payment Required`. The skill also lists the forms of each of the
+  free names, and `atr` and `adx` are no longer among the names that are always unknown. A new example, 9, uses bands and
+  a cloud.
 
 ### Changed 🔄
 
