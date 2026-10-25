@@ -204,7 +204,7 @@ setup:
 
 Each line is one call on the indicator builder, without the semicolon — the same builder a Java
 strategy uses (`references/indicators.md` in the `qtsurfer-java-strategy` skill describes its
-catalogue, and what of it a submitted strategy cannot use). One call per line; a call may not span
+catalogue). One call per line; a call may not span
 lines.
 
 **The names that work** are the builder's methods that take plain values:

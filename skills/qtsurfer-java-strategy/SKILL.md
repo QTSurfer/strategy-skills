@@ -89,6 +89,10 @@ protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
 
 See [references/indicators.md](references/indicators.md) for the full indicator catalogue.
 
+The pro indicators (ADX, ATR, SuperTrend, Ichimoku, VWAP and the rest) are on the same builder through
+`Pro.on(indicators)`, and come with the Pro and Elite plans; "The pro indicators" in the catalogue has the call, an
+example that compiles and what a plan without them is refused with (`402`).
+
 ### WindowTime values
 
 `WindowTime.s1`, `s5`, `s10`, `s30`, `m1`, `m3`, `m5`  
