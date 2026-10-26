@@ -113,6 +113,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-qtscript-strategy`: `conditional` can only be written in Java.** The skill listed it among the names that a
+  `setup:` line can write; it takes a function and indicators as objects, so it joins the methods that take a function.
+  The skill now says how to compare an indicator with a number (`equal`, `notEqual`, `greatThan`, `greatOrEqual`,
+  `lessThan`, `lessOrEqual`).
 - **`qtsurfer-java-strategy`: "Common mistakes" no longer says to prefer an inner class over a lambda for a listener.**
   Replaced by when each fits, and two new entries for the two traps above (`updateIndicators` instead of
   `super.update`, `min = 1`). The `README.md` line that said inner classes must extend `AbstractWindowListener` now

@@ -209,7 +209,7 @@ lines.
 
 **The names that work** are the builder's methods that take plain values:
 
-`add` `bollinger` `bollingerBandwidth` `cci` `clamp` `conditional` `diff` `distance` `distanceMa` `ema` `equal`
+`add` `bollinger` `bollingerBandwidth` `cci` `clamp` `diff` `distance` `distanceMa` `ema` `equal`
 `gain` `greatOrEqual` `greatThan` `lessOrEqual` `lessThan` `loss` `macd` `max` `min` `mul` `notEqual`
 `percentChange` `rateChange` `round` `rsi` `sma` `stochRsi` `sum`
 
@@ -249,8 +249,9 @@ the builder, `InstrumentGroupRTIndicator`.
 | `sum` | `sum(String)` · `sum(String, String)` |
 
 A call whose arguments match none of them is rejected with the forms that do exist: `ema(1, 2, 3)` answers that its forms are `ema(int)`,
-`ema(String, int)` and `ema(String, String, int)`. The methods that take a function (`predicate`, `fun`,
-`decorate`, `periodCount`) can only be written in Java.
+`ema(String, int)` and `ema(String, String, int)`. The methods that take a function (`predicate`, `fun`, `decorate`,
+`periodCount`) and `conditional`, which takes a function and indicators as objects, can only be written in Java. To
+compare an indicator with a number, use `equal`, `notEqual`, `greatThan`, `greatOrEqual`, `lessThan` or `lessOrEqual`.
 
 **A name that is not on the list, and that no `uses` line brings in (next section), is rejected as `unknown indicator
 '<name>'`.** `wma` and `zscore` are among the names that answer this way, and so are `atr` and `adx` unless the file
