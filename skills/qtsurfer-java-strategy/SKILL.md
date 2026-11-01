@@ -87,7 +87,7 @@ protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
 }
 ```
 
-See [references/indicators.md](references/indicators.md) for the full indicator catalogue.
+See [references/indicators.md](references/indicators.md) for the full indicator catalogue. It is the up-to-date list of which indicators exist, free and pro, and what each one computes: check it before writing a call, and before telling anyone that an indicator does not exist.
 
 The pro indicators (ADX, SuperTrend, Ichimoku, VWAP and the rest) are on the same builder through
 `Pro.on(indicators)`, and come with the Pro and Elite plans; "The pro indicators" in the catalogue has the call, an
