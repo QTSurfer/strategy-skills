@@ -113,6 +113,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-qtscript-strategy` and `qtsurfer-java-strategy`: `atr` and `wma` are free, with nine more, and `pro.atr` is
+  gone.** The builder now has `wma`, `tema`, `hma`, `mma`, `kama`, `stdDev`, `variance`, `volatility`,
+  `percentVolatility`, `bollingerPercentB` and `atr` on every plan, so the free names under `setup:` go from 28 to 39 and
+  the pro set from thirteen to twelve (`adx`, `cmf`, `garmanKlass`, `ichimoku`, `kurtosis`, `mfi`, `obv`, `parkinson`,
+  `rogersSatchell`, `superTrend`, `vwap`, `yangZhang`). `uses pro.atr` is answered with `unknown pro indicator 'atr'` and
+  that list, and a strategy that uses only `atr` needs no pro plan. The QTScript skill lists the eleven names with their
+  forms and default registered names, says that `atr` reads whole bars and belongs in a kline strategy, and drops `wma`
+  and `atr` from the names that are `unknown indicator` (`zscore`, and `adx` or `kurtosis` unless a `uses` line brings
+  them in, now stand for them). The examples that said `uses pro.adx, pro.atr` say `uses pro.adx`. The Java skill's
+  catalogue gets the eleven builder calls, and `Atr` and the O(1) `Wma` leave its pro table. The entries below that name
+  `atr` or `wma` as unknown, or count thirteen pro indicators, describe what was true when they were written.
+
 - **`qtsurfer-qtscript-strategy`: `conditional` can only be written in Java.** The skill listed it among the names that a
   `setup:` line can write; it takes a function and indicators as objects, so it joins the methods that take a function.
   The skill now says how to compare an indicator with a number (`equal`, `notEqual`, `greatThan`, `greatOrEqual`,

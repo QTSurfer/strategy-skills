@@ -190,7 +190,7 @@ setup:
 
 ## 9. Pro indicators: bands and a cloud (kline)
 
-`uses pro.*` brings in the thirteen pro indicators, which read whole bars and so belong in a `kline` strategy. This one
+`uses pro.*` brings in the twelve pro indicators, which read whole bars and so belong in a `kline` strategy. This one
 uses bands and a cloud: a window on `superTrend` or `ichimoku` attaches to the main line, and the body reads the others with
 `value($indicator + "…")`. Running it needs the Pro or Elite plan; on another plan the answer is a `402`.
 
