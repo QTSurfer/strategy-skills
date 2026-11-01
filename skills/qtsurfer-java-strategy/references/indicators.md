@@ -26,6 +26,27 @@ Default indicator name (when `name` is omitted) is the method name + parameters,
 .ema("fast", "vol", 9)                // EMA of volume
 ```
 
+## Averages, statistics and volatility
+
+Free, on the same builder. Called with no name of their own they register the name in the comment.
+
+```java
+.wma(5)                                // weighted moving average → "wma5"
+.tema(4)                               // triple EMA → "tema4"
+.hma(6)                                // Hull moving average → "hma6"
+.mma(7)                                // → "mma7"
+.kama()                                // Kaufman adaptive → "kama10_2_30"
+.stdDev(5)                             // standard deviation → "stdDev5"
+.variance(5)                           // → "variance5"
+.volatility(5)                         // → "vol5"
+.percentVolatility(5)                  // → "pvol5"
+.bollingerPercentB()                   // %B of a Bollinger band → "pctB20_2"
+.atr(14)                               // average true range → "atr14"
+```
+
+`atr` reads whole bars, like the pro indicators do: use it in a kline strategy. On a ticker strategy its values are not
+the bar's and mean nothing. `wma` and `atr` are builder methods, free on every plan; there is no `Pro` call for either.
+
 ## Oscillators & momentum
 
 ```java
@@ -135,7 +156,7 @@ indicators.getReadOnly("ema9").ifPresent(src ->
 The pro indicators come with the Pro and Elite plans. In Java they are the methods of
 `Pro`, in `com.wualabs.qtsurfer.engine.indicators.pro`: `Pro.on(indicators)` takes the indicator group that `setupIndicators`
 receives, and each call registers one pro indicator with the same names, forms and ids as the
-table under "The pro indicators: `uses`" in the `qtsurfer-qtscript-strategy` skill lists (`atr`, `adx`, `cmf`,
+table under "The pro indicators: `uses`" in the `qtsurfer-qtscript-strategy` skill lists (`adx`, `cmf`,
 `garmanKlass`, `ichimoku`, `kurtosis`, `mfi`, `obv`, `parkinson`, `rogersSatchell`, `superTrend`, `vwap`, `yangZhang`). `Pro.on(indicators).adx(14)` registers `adx14` and, beside it,
 `adx14PlusDI` and `adx14MinusDI`. A window goes on the main one (`adx14`), and the listener reads the others by name.
 
@@ -237,12 +258,12 @@ performance Ratios are **pro-only today**, the free tier has no indicator in tho
 | Category | Tier | `*RTIndicator` classes |
 |---|---|---|
 | Moving averages | Free | `Sma`, `Ema`, `Wma`, `Hma`, `Kama`, `Tema`, `Mma` |
-| Moving averages | Pro | `Alma`, `Dema`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma`, `Wma` (O(1) twin), `Envelopes` |
+| Moving averages | Pro | `Alma`, `Dema`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma`, `Envelopes` |
 | Statistics | Free | `StandardDeviation`, `Variance` |
 | Statistics | Pro | `StandardDeviation`, `Variance` (O(1) twins), `ZScore`, `Skewness`, `Kurtosis`, `RollingPercentile`, `Correlation`, `Covariance`, `Beta`, `LinearRegressionSlope`, `SimpleLinearRegression` |
 | Trend | Pro only | `Adx`, `Aroon`, `SuperTrend`, `ParabolicSar`, `Ichimoku`, `DonchianChannel`, `EfficiencyRatio` |
 | Volatility | Free | `VolatilityRTIndicator`, `PercentVolatilityRTIndicator` |
-| Volatility | Pro | `Atr`, `Natr`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
+| Volatility | Pro | `Natr`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
 | Volume | Pro only | `Vwap`, `Obv`, `Mfi`, `Cmf`, `Adl`, `ElderForceIndex` |
 | Oscillators | Free | `Macd`, `StochasticRsi`, `Cci` |
 | Oscillators | Pro | `StochasticOscillator`, `Roc`, `Momentum`, `WilliamsR`, `UltimateOscillator` |
