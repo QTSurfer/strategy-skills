@@ -54,6 +54,11 @@ the bar's and mean nothing. `wma` and `atr` are builder methods, free on every p
 .rsi(14, false)                        // Wilder's smoothing
 .rsi("myRsi", 14, true)
 
+.cci(20)                               // → "cci20"
+.macd()                                // MACD 12/26 of the group's source → "macd"
+.macd("m", 8, 21)                      // custom EMA periods
+.stochRsi(14)                          // Stochastic RSI, output 0–100 → "stochRsi14"
+
 .bollinger("bb", 20, 2.0)             // → "bb", "bbUpper", "bbLower"
 .bollingerBandwidth("bb")             // % width of a Bollinger band
 ```
@@ -252,22 +257,34 @@ indicators
 ```
 
 Constructors vary per class — most take `(int periods)` and/or `(RTIndicator source, int periods)`;
-some (lombok-built) differ, so check the class. Useful classes by category — Trend, Volume, and
-performance Ratios are **pro-only today**, the free tier has no indicator in those categories yet:
+some (lombok-built) differ, so check the class. The classes by category, with the package each lives in (under
+`com.wualabs.qtsurfer.engine.indicators`) — Trend, Volume, and performance Ratios are **pro-only today**, the free tier has
+no indicator in those categories yet. The name of a class is the one in the table plus `RTIndicator`
+(`Sma` is `SmaRTIndicator`); the same short name can exist in a free and in a pro package (`StandardDeviation`,
+`Variance`), so import the one in the package you mean:
 
-| Category | Tier | `*RTIndicator` classes |
-|---|---|---|
-| Moving averages | Free | `Sma`, `Ema`, `Wma`, `Hma`, `Kama`, `Tema`, `Mma` |
-| Moving averages | Pro | `Alma`, `Dema`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma`, `Envelopes` |
-| Statistics | Free | `StandardDeviation`, `Variance` |
-| Statistics | Pro | `StandardDeviation`, `Variance` (O(1) twins), `ZScore`, `Skewness`, `Kurtosis`, `RollingPercentile`, `Correlation`, `Covariance`, `Beta`, `LinearRegressionSlope`, `SimpleLinearRegression` |
-| Trend | Pro only | `Adx`, `Aroon`, `SuperTrend`, `ParabolicSar`, `Ichimoku`, `DonchianChannel`, `EfficiencyRatio` |
-| Volatility | Free | `VolatilityRTIndicator`, `PercentVolatilityRTIndicator` |
-| Volatility | Pro | `Natr`, `RealizedVolatility`, `Parkinson`, `GarmanKlass`, `EwmaVolatility` |
-| Volume | Pro only | `Vwap`, `Obv`, `Mfi`, `Cmf`, `Adl`, `ElderForceIndex` |
-| Oscillators | Free | `Macd`, `StochasticRsi`, `Cci` |
-| Oscillators | Pro | `StochasticOscillator`, `Roc`, `Momentum`, `WilliamsR`, `UltimateOscillator` |
-| Ratios (performance) | Pro only | `SharpeRatio`, `SortinoRatio`, `CalmarRatio`, `MaxDrawdown`, `OmegaRatio`, `UlcerIndex` |
+| Category | Tier | Package | `*RTIndicator` classes |
+|---|---|---|---|
+| Moving averages | Free | `averages` | `Sma`, `Ema`, `Wma`, `WmaIncremental`, `Hma`, `Kama`, `Tema`, `Mma` |
+| Moving averages | Pro | `averages.pro` | `Alma`, `Dema`, `Envelopes`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma` |
+| Bands | Free | `bollinger` | `BollingerBandWidth`, `BollingerBands`, `BollingerPercentB` |
+| Oscillators | Free | `momentum` | `Rsi`, `Macd`, `StochasticRsi`, `Cci` |
+| Oscillators | Pro | `momentum.pro` | `AcceleratorOscillator`, `AdaptiveFisherTransform`, `AwesomeOscillator`, `BalanceOfPower`, `BullBearPower`, `ChandeForecastOscillator`, `Cmo`, `ConnorsRsi`, `CoppockCurve`, `DetrendedPriceOscillator`, `FisherTransform`, `KnowSureThing`, `Momentum`, `RelativeVigorIndex`, `Roc`, `StochasticOscillator`, `Trix`, `TrueStrengthIndex`, `UltimateOscillator`, `WilliamsR` |
+| Statistics | Free | `statistics` | `StandardDeviation`, `Variance` |
+| Statistics | Pro | `statistics.pro` | `Autocorrelation`, `Beta`, `Correlation`, `Covariance`, `HurstExponent`, `Kurtosis`, `LinearRegressionSlope`, `RollingPercentile`, `SimpleLinearRegression`, `Skewness`, `StandardDeviation`, `ValueAtRisk`, `Variance`, `ZScore` |
+| Volatility | Free | `volatility` | `Atr` |
+| Volatility | Free | `helpers` | `Volatility`, `PercentVolatility` |
+| Volatility | Pro | `volatility.pro` | `ChoppinessIndex`, `KeltnerChannel`, `MassIndex`, `Natr`, `RelativeVolatilityIndex` |
+| Volatility (estimators) | Pro | `statistics.pro.volatility` | `EwmaVolatility`, `GarmanKlassVolatility`, `ParkinsonVolatility`, `RealizedVolatility`, `RogersSatchellVolatility`, `YangZhangVolatility` |
+| Trend | Pro only | `trend.pro` | `Adx`, `Aroon`, `ChandeKrollStop`, `ChandelierExit`, `DonchianChannel`, `EfficiencyRatio`, `Ichimoku`, `ParabolicSar`, `SuperTrend`, `Vortex` |
+| Volume | Pro only | `volume.pro` | `Adl`, `ChaikinOscillator`, `Cmf`, `EaseOfMovement`, `ElderForceIndex`, `KlingerOscillator`, `Mfi`, `NegativeVolumeIndex`, `Obv`, `Pvt`, `Vwap` |
+| Ratios (performance) | Pro only | `statistics.pro.ratios` | `CalmarRatio`, `InformationRatio`, `MaxDrawdown`, `OmegaRatio`, `SharpeRatio`, `SortinoRatio`, `TailRatio`, `TreynorRatio`, `UlcerIndex` |
+| Distance and change | Free | `distance` | `Distance`, `DistanceFromMa` |
+| Distance and change | Free | `helpers` | `RateChange`, `PercentChangePeriod` |
+| Counting and extremes | Free | `helpers` | `Gain`, `Loss`, `Max`, `Min`, `Count` |
+| Counting and extremes | Free | `numeric` | `Sum` |
+| Derived (the builder registers them) | Free | `numeric` | `BiFunction`, `Clamp`, `ClampPredicate`, `Conditional`, `Predicate`, `Round` |
+| Derived (the builder registers them) | Free | `helpers` | `PredicatePeriodCounter` |
 
 Compose them by feeding one indicator's read-only view into another's `(RTIndicator, …)` constructor
 (e.g. a `ZScore` of an `Sma`). This is how to do rolling stats / aggregation **without

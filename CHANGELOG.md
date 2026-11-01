@@ -49,6 +49,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy`: `references/indicators.md`, the indicators QTScript can call.** The Java skill had a
+  catalogue of its indicators and the QTScript skill had none. The new file groups the 39 free names (averages,
+  oscillators, bands, volatility, distance and change, counting and extremes, arithmetic and comparisons) and the 12 pro
+  ones, says what each computes and which register a name of their own, and says that `atr` reads whole bars and belongs
+  in a `kline` strategy. The forms of each name stay in `SKILL.md`, in one place; the file points there. It also says what
+  QTScript cannot call: the Java-only builder methods and the many indicator classes that are not builder names.
+
 - **`qtsurfer-qtscript-strategy` and `qtsurfer-java-strategy`: the window hands you the previous value.** `prev` is
   the value the indicator had when the previous window closed, so a crossing or a true range needs nothing kept in
   the store. A section and two examples in each skill — the RSI climbing back through a level, and the true range of
@@ -112,6 +119,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   strategy cannot use.
 
 ### Changed 🔄
+
+- **`qtsurfer-java-strategy`: the indicator catalogue lists every class, with its package.** The table of classes had a
+  fraction of the pro indicators and no package, which is the part a Java import needs. It now lists each free and pro class
+  of the engine by category, with the package it lives in (`averages`, `averages.pro`, `statistics.pro.ratios`...), and it
+  tells apart the free and the pro `StandardDeviation` and `Variance`. `Atr` joins the free volatility classes, `Wma`
+  gets its incremental twin `WmaIncremental` (the class `wma(...)` registers), and `cci`, `macd` and `stochRsi` get their
+  builder calls, which the file named nowhere. The indicators of the onchain, ta4j and talib modules are not listed:
+  strategies sent to the platform cannot use them.
 
 - **`qtsurfer-qtscript-strategy` and `qtsurfer-java-strategy`: `atr` and `wma` are free, with nine more, and `pro.atr` is
   gone.** The builder now has `wma`, `tema`, `hma`, `mma`, `kama`, `stdDev`, `variance`, `volatility`,

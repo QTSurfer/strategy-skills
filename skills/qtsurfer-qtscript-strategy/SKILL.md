@@ -203,11 +203,12 @@ setup:
 ```
 
 Each line is one call on the indicator builder, without the semicolon — the same builder a Java
-strategy uses (`references/indicators.md` in the `qtsurfer-java-strategy` skill describes its
-catalogue). One call per line; a call may not span
+strategy uses (`references/indicators.md` here groups the names QTScript can call and says what each computes; the one in
+the `qtsurfer-java-strategy` skill describes the whole Java catalogue). One call per line; a call may not span
 lines.
 
-**The names that work** are the builder's methods that take plain values:
+**The names that work** are the builder's methods that take plain values. `references/indicators.md` is the up-to-date list of which indicators exist, free and pro, and what each one computes: check it before writing a call, and before telling anyone that an indicator does not exist.
+
 
 `add` `bollinger` `bollingerBandwidth` `cci` `clamp` `diff` `distance` `distanceMa` `ema` `equal`
 `gain` `greatOrEqual` `greatThan` `lessOrEqual` `lessThan` `loss` `macd` `max` `min` `mul` `notEqual`
@@ -559,5 +560,6 @@ Two more things to know:
 ## More
 
 - [references/examples.md](references/examples.md) — worked strategies, one per data source.
+- [references/indicators.md](references/indicators.md) — the indicators QTScript can call, free and pro, by group.
 - The **`qtsurfer-java-strategy`** skill — the strategy API every body is written against: indicator
   catalogue, window listeners, `StateStore`, signal emission, and the Java route itself.
