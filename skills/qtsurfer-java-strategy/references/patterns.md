@@ -48,7 +48,7 @@ indicators
 
 ## Trailing exit variants
 
-### Midpoint trailing (production proven, ~7% avg)
+### Midpoint trailing
 
 ```java
 // In onChange:
