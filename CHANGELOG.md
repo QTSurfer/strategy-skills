@@ -120,6 +120,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-java-strategy`: the Midpoint trailing pattern no longer carries a performance figure in its
+  heading.** The heading of the pattern in `references/patterns.md` read "production proven, ~7% avg", a claim about
+  results that the example beneath it does not show and that a reader could take for a promise. The heading is
+  now just the name of the pattern; the code and its explanation are unchanged.
+
 - **`qtsurfer-java-strategy`: the indicator catalogue lists every class, with its package.** The table of classes had a
   fraction of the pro indicators and no package, which is the part a Java import needs. It now lists each free and pro class
   of the engine by category, with the package it lives in (`averages`, `averages.pro`, `statistics.pro.ratios`...), and it
