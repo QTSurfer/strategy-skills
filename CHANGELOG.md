@@ -49,6 +49,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.2.0: keeping state between windows, `store`.** The skill named the `StateStore` and
+  sent the reader to the Java skill for it, so an agent writing QTScript saw flags and counters and nothing else. It
+  either refused to keep a price between windows or guessed methods that do not exist (`getDouble`, `getInt`,
+  `set(key, number)`). A section in `SKILL.md` now lists the four kinds of key (value, flag, counter, sum), their
+  methods, and the ones that do not exist. It also says how to read a value. Use a cast and a default,
+  `(Double) store.getState("entry", 0.0)`, because Janino, the compiler the platform tries first, erases the
+  generic type of `getState`, and an uncast read goes on to the slower javac fallback. Write a value with the type
+  you read it as, and use one kind per key: a type mismatch or a counter read as a value is a
+  `ClassCastException` on the server. Three examples use it: an entry price with a stop and a target, the highest
+  high of the last N bars kept as a ring of keys, and a cooldown counted in bars. Reserved names now list the bar's
+  fields (`high`, `close`…), so a level is not called `high`.
+
+- **`qtsurfer-qtscript-strategy` 1.2.0: `references/laboratory.md`, QTScript in the browser.** The QTSurfer
+  Laboratory runs a `.qtscript` file in the browser with its own translation of the bodies. The new file says what
+  runs there (`ticker` and `kline`, not `funding`; every section; every indicator, pro included), the subset of Java
+  a body has (no arrays, collections, lambdas, `try` or `String.format`), that `System` is refused by the platform
+  even where the Laboratory prints it, what runs there but fails on the platform (reads of the store the Laboratory
+  does not check), and that registering, validating, plans and sizing are the platform's and do not apply.
+  `SKILL.md` points to it from the top and from "More".
+
 - **`qtsurfer-qtscript-strategy`: `references/indicators.md`, the indicators QTScript can call.** The Java skill had a
   catalogue of its indicators and the QTScript skill had none. The new file groups the 39 free names (averages,
   oscillators, bands, volatility, distance and change, counting and extremes, arithmetic and comparisons) and the 12 pro

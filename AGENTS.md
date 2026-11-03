@@ -25,8 +25,10 @@ for what goes inside a body:
 
 ```
 skills/qtsurfer-qtscript-strategy/
-  SKILL.md                 <- the language (header, param, init, instruments, setup:, windows, onCommand)
-  references/examples.md   <- complete .qtscript strategies, one per data source
+  SKILL.md                    <- the language (header, param, init, instruments, setup:, windows, store, onCommand)
+  references/examples.md      <- complete .qtscript strategies, one per data source
+  references/indicators.md    <- the indicators QTScript can call, free and pro
+  references/laboratory.md    <- QTScript in the Laboratory, in the browser: what runs there
 ```
 
 > Raw links (for agents that fetch URLs):

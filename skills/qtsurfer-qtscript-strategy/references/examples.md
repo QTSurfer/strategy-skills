@@ -209,3 +209,92 @@ setup:
   vwap()
   yangZhang(20)
 ```
+
+## 10. Entry price, stop loss and take profit (kline)
+
+A number kept between windows is a value in the store: written with `setState`, read with a cast and a
+default (see "Keeping state between windows" in [SKILL.md](../SKILL.md)). Here the entry price is the
+position: `0.0` means flat.
+
+```
+strategy "RSI with stop and target" kline
+
+param rsiLow  = 30  "Oversold level"
+param stopPct = 2.0 "Stop loss, percent under the entry"
+param takePct = 4.0 "Take profit, percent over the entry"
+
+setup:
+  rsi(14) window m1 {
+    double entry = (Double) store.getState("entry", 0.0);
+    if (entry == 0.0) {
+      if (actual < rsiLow) {
+        store.setState("entry", close);
+        emitBuy(close);
+      }
+    } else if (close <= entry * (1 - stopPct / 100) || close >= entry * (1 + takePct / 100)) {
+      store.setState("entry", 0.0);
+      emitSell(close);
+    }
+  }
+```
+
+## 11. Highest high of the last N bars (kline)
+
+`max` and `min` are running extremes, not the extreme of the last N bars, so the bars are kept in the store:
+a ring of `bars` keys for the highs and another for the lows, and the position `n` as a value. The bar
+being closed is compared first and written after, so it is measured against the N before it.
+
+```
+strategy "Breakout of the last N bars" kline
+
+param bars = 20 "Bars to look back"
+
+setup:
+  window close m1 {
+    int n = (Integer) store.getState("n", 0);
+    if (n >= bars) {
+      double highest = -Double.MAX_VALUE;
+      double lowest = Double.MAX_VALUE;
+      for (int i = 0; i < bars; i++) {
+        highest = Math.max(highest, (Double) store.getState("h" + i, 0.0));
+        lowest = Math.min(lowest, (Double) store.getState("l" + i, 0.0));
+      }
+      if (close > highest && !store.is("long")) {
+        store.set("long");
+        emitBuy(close);
+      }
+      if (close < lowest && store.is("long")) {
+        store.unset("long");
+        emitSell(close);
+      }
+    }
+    store.setState("h" + (n % bars), high);
+    store.setState("l" + (n % bars), low);
+    store.setState("n", n + 1);
+  }
+```
+
+A `double[]` or a `List` would be shorter, and it works on the server, but the Laboratory does not translate
+either: keys in the store work in both.
+
+## 12. A cooldown counted in bars (kline)
+
+The bars since the last signal are a value, not a counter: the body has to read the count without moving it,
+and a counter is read only through what `inc` returns. Starting from `cooldown` lets the first signal through.
+
+```
+strategy "RSI with a cooldown" kline
+
+param rsiLow   = 30 "Oversold level"
+param cooldown = 15 "Bars to wait after a signal"
+
+setup:
+  rsi(14) window m1 {
+    int since = (Integer) store.getState("since", cooldown) + 1;
+    store.setState("since", since);
+    if (since > cooldown && actual < rsiLow) {
+      emitBuy(close);
+      store.setState("since", 0);
+    }
+  }
+```
