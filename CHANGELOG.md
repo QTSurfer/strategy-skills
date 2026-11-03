@@ -120,6 +120,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-qtscript-strategy`: the pro indicators of the catalogue, by group and with what each reads.** The list gave
+  one line per indicator and said that all twelve read whole bars. It now groups them (trend, volume, statistics, volatility
+  estimators), names the inputs of the four volatility estimators (the high and the low for Parkinson, the open, high, low
+  and close for the other three), says that `kurtosis` is excess kurtosis of the price, and says that eleven of the twelve
+  read whole bars and `kurtosis` reads one value, so it is the one that makes sense on a `ticker` strategy.
+
 - **`qtsurfer-java-strategy`: the Midpoint trailing pattern no longer carries a performance figure in its
   heading.** The heading of the pattern in `references/patterns.md` read "production proven, ~7% avg", a claim about
   results that the example beneath it does not show and that a reader could take for a promise. The heading is
