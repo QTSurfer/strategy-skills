@@ -1,9 +1,9 @@
 ---
 name: qtsurfer-qtscript-strategy
-description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
+description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.1.0
+  version: 1.2.0
 ---
 
 # QTSurfer QTScript Strategy
@@ -22,6 +22,10 @@ QTScript removes the ceremony around a strategy — package, imports, class decl
 
 A `.qtscript` source becomes exactly one Java class and is compiled by the same server-side chain a
 Java strategy goes through.
+
+The QTSurfer **Laboratory** runs a `.qtscript` file in the browser instead, with its own translation of
+the bodies, and there a body is a subset of Java: [references/laboratory.md](references/laboratory.md)
+says what runs there and what does not apply.
 
 ## A whole strategy
 
@@ -497,6 +501,44 @@ Your Java, plus what is already in scope:
 Every `param` is readable by name, and nothing needs importing: the packages a strategy is allowed
 to use are already in scope.
 
+### Keeping state between windows: `store`
+
+A body runs once per closed window and keeps nothing between runs: what one window has to tell the next
+goes in `store`. Each instrument has its own, shared by all its windows, and it is memory: a restart
+empties it. A key holds one of four kinds of state; use one kind per key.
+
+| Kind | Write | Read | Notes |
+|---|---|---|---|
+| A value | `store.setState("entry", close)` | `(Double) store.getState("entry", 0.0)` | a number, a string or a boolean; `has(key)` says whether it was written, `clear(key)` forgets it |
+| A flag | `store.set("long")`, `store.unset("long")` | `store.is("long")` | `false` until it is set |
+| A counter | `store.inc("bars")`, `store.dec("bars")` | the `int` they return | starts at 0; `reset("bars")` puts it back |
+| A sum | `store.add("vol", volume)` | the `double` it returns | starts at 0; `reset("vol")` puts it back |
+
+- **Read a value with a cast and a default**: `(Double) store.getState("entry", 0.0)`,
+  `(Integer) store.getState("since", 0)`, `(Boolean) store.getState("armed", false)`. `getState` is
+  generic, and the platform compiles with a small, fast compiler first, which does not infer the type it
+  returns: without the cast the file goes on to the full Java compiler, which is slower and has few slots
+  (a busy one answers `The full Java compiler is busy, please retry`). The default covers the first
+  window, when nothing was written yet: `getState(key)` alone gives `null`, and a `null` used as a number
+  is a `NullPointerException` on the server.
+- **Write a value with the type you read it as.** A value comes back as what was written:
+  `store.setState("p", 0)` keeps an `Integer`, and reading it as `(Double)` is a `ClassCastException` on the
+  server. Write `0.0` for a decimal, and use the same literal as the default.
+- **One kind per key.** The four kinds share one map: a key written with `inc` holds a counter, and
+  `(Integer) store.getState("bars", 0)` after `store.inc("bars")` is a `ClassCastException` on the server.
+- **These are the methods a body needs, and the ones that run everywhere.** There is no `get`,
+  `getDouble`, `getInt`, `getLong` or `getBoolean`, and `set` takes no number: a number is a value,
+  written with `setState`. On the server the store also has `clear()` (every key), `getCounter`,
+  `getAccumulator` and `getOrCreateState`; the Laboratory does not translate the last three.
+- **Read a counter through what `inc` and `dec` return.** On the server `store.getCounter("bars").get()`
+  also reads it without moving it, but not in the Laboratory. To look at a count without moving it in
+  both, keep it as a value: `int since = (Integer) store.getState("since", 0) + 1;` then
+  `store.setState("since", since);`.
+- **Past values are several keys**, such as `"h" + (n % size)` for a ring of `size` slots with the position
+  `n` kept as a value: example 11 in [references/examples.md](references/examples.md) keeps the highest
+  high of the last N bars that way. An array or a `List` in the store works on the server but not in the
+  Laboratory.
+
 ## Sizing
 
 A strategy says when and which way, not how much. `emitBuy(price)` and `emitSell(price)` carry a price and
@@ -549,9 +591,10 @@ have just written before you run it.
 Two more things to know:
 
 - **Reserved names.** The keywords (`strategy`, `param`, `instruments`, `init`, `setup`, `window`,
-  `kline`, `funding`, `onCommand`), the in-scope names above (`price`, `actual`, `store`, `$command`, …)
-  and the engine's own property keys cannot be used as parameter names. You are told which, and why,
-  at compile time.
+  `kline`, `funding`, `onCommand`), the in-scope names above (`actual`, `prev`, `store`, `price`, `open`,
+  `high`, `low`, `close`, `volume`, `rate`, `$indicator`, `$command`, …) and the engine's own property keys
+  cannot be used as parameter names: a level is `rsiHigh`, not `high`. You are told which, and why, at
+  compile time.
 - **Size.** The source is capped at 32 KiB: a larger body is refused with `413` and the API's JSON
   error, which names the cap. A strategy is also compiled and stored as one class; a source large
   enough to exceed the platform's stored-class budget is refused when you register it, with the size
@@ -561,5 +604,7 @@ Two more things to know:
 
 - [references/examples.md](references/examples.md) — worked strategies, one per data source.
 - [references/indicators.md](references/indicators.md) — the indicators QTScript can call, free and pro, by group.
+- [references/laboratory.md](references/laboratory.md) — QTScript in the Laboratory, in the browser: the subset
+  of Java a body has there, and what of this file does not apply.
 - The **`qtsurfer-java-strategy`** skill — the strategy API every body is written against: indicator
   catalogue, window listeners, `StateStore`, signal emission, and the Java route itself.
