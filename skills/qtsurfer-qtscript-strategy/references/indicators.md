@@ -95,26 +95,46 @@ call by its bare name, like `ema(20)` or `atr(14)`.
 
 ## The pro indicators
 
-They read whole bars, so use them in a `kline` strategy. A `uses` line brings them in: `uses pro.adx, pro.obv` for those two,
-`uses pro.*` for all twelve, and several `uses` lines add up. A plan without them can register the strategy but not run it
-(`402`).
+A `uses` line brings them in: `uses pro.adx, pro.obv` for those two, `uses pro.*` for all twelve, and several `uses` lines
+add up. A plan without them can register the strategy but not run it (`402`).
 
-| Name | What it is |
-|---|---|
-| `adx` | Average directional index; the two directional lines register beside it |
-| `superTrend` | SuperTrend line, with an upper and a lower band beside it |
-| `ichimoku` | Ichimoku cloud; the Tenkan line is the main one, with the Kijun, Senkou A, Senkou B and Chikou lines beside it |
-| `obv` | On-balance volume |
-| `vwap` | Volume-weighted average price |
-| `mfi` | Money flow index |
-| `cmf` | Chaikin money flow |
-| `kurtosis` | Kurtosis of the close over a period |
-| `parkinson` | Volatility estimator over whole bars |
-| `garmanKlass` | Volatility estimator over whole bars |
-| `rogersSatchell` | Volatility estimator over whole bars |
-| `yangZhang` | Volatility estimator over whole bars |
+Eleven of the twelve read whole bars, not a single value, so they belong in a `kline` strategy: on a `ticker` strategy their
+values are not the bar's and mean nothing. `kurtosis` is the exception, since it reads one value, the price of the group (the
+close on a kline).
 
-The four estimators take an annualization factor as their last, optional argument.
+### Trend
+
+| Name | What it is | Notes |
+|---|---|---|
+| `adx` | Average directional index | The two directional lines register beside it |
+| `superTrend` | SuperTrend line | An upper and a lower band register beside it |
+| `ichimoku` | Ichimoku cloud | The Tenkan line is the main one, with the Kijun, Senkou A, Senkou B and Chikou lines beside it |
+
+### Volume
+
+| Name | What it is | Notes |
+|---|---|---|
+| `obv` | On-balance volume | |
+| `vwap` | Volume-weighted average price | |
+| `mfi` | Money flow index | |
+| `cmf` | Chaikin money flow | |
+
+### Statistics
+
+| Name | What it is | Notes |
+|---|---|---|
+| `kurtosis` | Excess kurtosis of the price over a period | Reads one value, not a bar. The period is required |
+
+### Volatility estimators
+
+Each takes an annualization factor as its last, optional argument.
+
+| Name | What it is | Notes |
+|---|---|---|
+| `parkinson` | Parkinson volatility | From the high and the low |
+| `garmanKlass` | Garman-Klass volatility | From the open, high, low and close |
+| `rogersSatchell` | Rogers-Satchell volatility | From the open, high, low and close |
+| `yangZhang` | Yang-Zhang volatility | From the open, high, low and close |
 
 ## What QTScript cannot call
 
