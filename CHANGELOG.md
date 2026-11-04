@@ -140,6 +140,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed 🔄
 
+- **`qtsurfer-qtscript-strategy` 1.2.1: code blocks are tagged `qtscript`.** Every QTScript program and fragment in
+  `SKILL.md` and `references/examples.md` was in an untagged block. The two compile and run-time messages were also
+  untagged. An agent asked to answer with a block tagged `qtscript` copied the untagged form from the skill instead,
+  and a reader that picks the program out by its tag missed it. In the QTSurfer web app's assistant test, 7 replies
+  out of 77 carried a program in an untagged block. The 28 QTScript blocks are now tagged `qtscript` and the two
+  messages `text`; no content changed.
+
 - **`qtsurfer-qtscript-strategy`: the pro indicators of the catalogue, by group and with what each reads.** The list gave
   one line per indicator and said that all twelve read whole bars. It now groups them (trend, volume, statistics, volatility
   estimators), names the inputs of the four volatility estimators (the high and the low for Parkinson, the open, high, low
