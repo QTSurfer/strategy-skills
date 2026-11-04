@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed 🩹
 
+- **`qtsurfer-qtscript-strategy` 1.2.2: a ticker window has `price` and nothing else.** The header section said the
+  keyword picks the data source, and the bar's fields were listed for `kline` in a table further down. Agents still wrote
+  `close`, `high` or `low` in a strategy with no keyword, which the compiler answers with `cannot find symbol: variable
+  close`. The section now says it plainly: reading a bar field makes the file a `kline` strategy, and its header says so.
+  It also says why the engine's ticker fields do not count: its open, high and low are the exchange's 24-hour rolling
+  statistics, not the window's. And it says there is no `ticker` keyword.
+
 - **`qtsurfer-java-strategy`: in a backtest the strategy sees only one instrument.** The
   cross-instrument section showed how to read every instrument a strategy accepts, and said nothing about the
   other half: a backtest feeds the strategy the ticks of the instrument it was prepared for and no other, so
