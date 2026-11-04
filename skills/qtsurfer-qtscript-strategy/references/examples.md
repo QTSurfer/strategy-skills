@@ -8,7 +8,7 @@ see [SKILL.md](../SKILL.md) for the language and the
 
 The smallest useful strategy: one indicator, one window, two signals.
 
-```
+```qtscript
 strategy "RSI reversion"
 
 param rsiLow  = 30  "Oversold"
@@ -28,7 +28,7 @@ setup:
 Two indicators read by name, and the shared per-instrument store used to emit on the crossing only
 once.
 
-```
+```qtscript
 strategy "EMA cross"
 
 param fast = 9  "Fast EMA"
@@ -60,7 +60,7 @@ instrument shares.
 
 Two windows on different indicators and periods, bodies written at column 0 rather than inline.
 
-```
+```qtscript
 strategy "Two windows"
 
 param rsiLow = 30
@@ -89,7 +89,7 @@ A window hands you the value the indicator had when the previous window closed a
 nothing in the store. This enters when the RSI climbs back through a level, once, on the window where it
 happens.
 
-```
+```qtscript
 strategy "RSI re-entry"
 
 param level = 30 "Level to climb back through"
@@ -109,7 +109,7 @@ when the rule needs two real closes.
 On `kline`, a window on `close` gives the previous bar's close as `prev`, which is what the true range needs
 next to the bar's own `high` and `low`.
 
-```
+```qtscript
 strategy "True range" kline
 
 setup:
@@ -125,7 +125,7 @@ On `kline` the bar's fields are in scope as plain variables. The bar width is no
 is the `cadence` you prepare the data at (`1m`, `1h`, `1d`, …), so the same strategy runs at any of
 them.
 
-```
+```qtscript
 strategy "Range breakout" kline
 
 param minRange = 0.5 "Minimum range, percent"
@@ -145,7 +145,7 @@ A strategy that computes rather than trades: `emitInfo` attaches fields to an in
 On funding there is no price — the value is `rate`. The platform accepts this file and can prepare
 funding data, but a backtest or sweep over funding data is rejected for now.
 
-```
+```qtscript
 strategy "Funding watch" funding
 
 instruments ~"^[A-Z]+/USDT:USDT$"
@@ -162,7 +162,7 @@ strategy sees.
 
 `init` for engine setters, and the braced form of `instruments` when a pattern is not enough.
 
-```
+```qtscript
 strategy "Configured"
 
 param gain = 0.5 "Minimum percent gain"
@@ -194,7 +194,7 @@ setup:
 uses bands and a cloud: a window on `superTrend` or `ichimoku` attaches to the main line, and the body reads the others with
 `value($indicator + "…")`. Running it needs the Pro or Elite plan; on another plan the answer is a `402`.
 
-```
+```qtscript
 strategy "Cloud and bands" kline
 uses pro.*
 
@@ -216,7 +216,7 @@ A number kept between windows is a value in the store: written with `setState`, 
 default (see "Keeping state between windows" in [SKILL.md](../SKILL.md)). Here the entry price is the
 position: `0.0` means flat.
 
-```
+```qtscript
 strategy "RSI with stop and target" kline
 
 param rsiLow  = 30  "Oversold level"
@@ -244,7 +244,7 @@ setup:
 a ring of `bars` keys for the highs and another for the lows, and the position `n` as a value. The bar
 being closed is compared first and written after, so it is measured against the N before it.
 
-```
+```qtscript
 strategy "Breakout of the last N bars" kline
 
 param bars = 20 "Bars to look back"
@@ -282,7 +282,7 @@ either: keys in the store work in both.
 The bars since the last signal are a value, not a counter: the body has to read the count without moving it,
 and a counter is read only through what `inc` returns. Starting from `cooldown` lets the first signal through.
 
-```
+```qtscript
 strategy "RSI with a cooldown" kline
 
 param rsiLow   = 30 "Oversold level"

@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.2.0
+  version: 1.2.1
 ---
 
 # QTSurfer QTScript Strategy
@@ -29,7 +29,7 @@ says what runs there and what does not apply.
 
 ## A whole strategy
 
-```
+```qtscript
 strategy "RSI reversion"
 
 param rsiLow  = 30  "Oversold"
@@ -58,7 +58,7 @@ your editor; only the text is sent.
 
 ## `strategy` — the header
 
-```
+```qtscript
 strategy "RSI reversion"          // ticker (default)
 strategy Reversion                // a bare identifier works too
 strategy Bars kline               // candles
@@ -82,7 +82,7 @@ executed yet`), so a funding file is accepted and cannot yet be backtested.
 
 ## `param` — configurable values
 
-```
+```qtscript
 param fastEma = 9     "Fast EMA period"
 param rsiLow  = 30
 param useVol  = true
@@ -98,7 +98,7 @@ compile, naming the line, rather than being silently ignored at run time.
 
 ## `init { }` — constructor, optional
 
-```
+```qtscript
 init {
   setPercentGain(0.5);
   setExecutionMode(ExecutionMode.LONG_MULTI);
@@ -113,7 +113,7 @@ on a parameter belongs in `setup:` or in a window body; a compile-time warning p
 
 ## `onCommand { }` — handling a command, optional
 
-```
+```qtscript
 onCommand {
   if ("flatten".equals($command)) {
     // close the position, cancel pending orders, whatever "flatten" means for this strategy
@@ -141,7 +141,7 @@ A window body gets its instrument's `store` handed to it; `onCommand` does not, 
 no instrument on its own — but `getStateStore("<symbol>")` takes one directly, so a command whose own
 properties name an instrument can still reach that instrument's store:
 
-```
+```qtscript
 strategy "Manual flatten"
 
 onCommand {
@@ -165,7 +165,7 @@ carries no instrument of its own.
 
 Two forms; a file uses one or the other.
 
-```
+```qtscript
 instruments */usdt                                  // any base quoted in USDT
 instruments btc/usdt, eth/*, ~"^SOL/(USDT|USDC)$"   // a list: any entry accepts
 ```
@@ -184,7 +184,7 @@ are reported when you compile, with the line and column, because nothing downstr
 
 The native form replaces the default, exactly like overriding the method in Java:
 
-```
+```qtscript
 instruments {
   return instrument.quote().equalsIgnoreCase("usdt");
 }
@@ -198,7 +198,7 @@ use a regular expression for the last one.
 
 ## `setup:` — indicators, one call per line
 
-```
+```qtscript
 setup:
   ema(12)
   ema(26)
@@ -335,7 +335,7 @@ of your own. The main one of `adx` is the ADX, that of `superTrend` is the Super
 
 This reads the ADX with the two directional lines beside it:
 
-```
+```qtscript
 strategy "ADX trend" kline
 uses pro.adx
 
@@ -355,7 +355,7 @@ setup:
 A file that brings in only `obv` and then calls `adx(14)` does not compile. The line of the call is rejected with
 `unknown indicator 'adx'`:
 
-```
+```qtscript
 uses pro.obv
 
 setup:
@@ -396,7 +396,7 @@ Registering a strategy that uses them is accepted on every plan; what a plan wit
 A window fires when its period closes, not on every tick, and wraps one source indicator. Five ways
 to write one:
 
-```
+```qtscript
 setup:
   rsi(14) window m1 { … }        // inline, attached to the indicator this line registers
   rsi(33) window Oversold        // same, but the body is a named section below
@@ -414,7 +414,7 @@ to a named section takes that section's period.
 A section named `Main` that nothing references is attached to the primary value (`price`, or `rate`
 on funding), which makes the shortest useful file:
 
-```
+```qtscript
 strategy Simple
 
 Main m1 {
@@ -428,7 +428,7 @@ of other tools. A crossing, or anything else that compares one close with the on
 kept in the `store`: the previous value is already in scope. Entering when the RSI climbs back through a
 level, once, on the window where it happens:
 
-```
+```qtscript
 strategy "RSI re-entry"
 
 param level = 30 "Level to climb back through"
@@ -442,7 +442,7 @@ setup:
 On a `kline` strategy a window on `close` hands you the previous bar's close as `prev`, which is what the
 true range needs next to the bar's own `high` and `low`:
 
-```
+```qtscript
 strategy "True range" kline
 
 setup:
@@ -469,7 +469,7 @@ same window.
 outer bands that its own line registered, and what tells a named section apart when it is attached to
 several indicators (each time it fires it sees the one that fired):
 
-```
+```qtscript
 setup:
   bollinger(20, 2) window m1 {
     if (price > value($indicator + "Upper")) emitSell(price);
@@ -570,7 +570,7 @@ Java version of the same strategy is the template in the other skill with your b
 
 Compile errors are reported against **your** line and column, never the generated Java:
 
-```
+```text
 Line 5, Column 13: incompatible types: java.lang.String cannot be converted to int
 ```
 
@@ -578,7 +578,7 @@ That covers both kinds of mistake: QTScript's own (an unknown section, a bad per
 parameter, a malformed instrument pattern) and Java's, from inside a body. A failure while the
 strategy is running is reported the same way, on the line the body came from:
 
-```
+```text
 QTScript line 6: Index 2 out of bounds for length 1
 ```
 
