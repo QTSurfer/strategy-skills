@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.2.1
+  version: 1.2.2
 ---
 
 # QTSurfer QTScript Strategy
@@ -68,7 +68,14 @@ strategy Rates funding            // funding rates
 The first line of every file. A quoted name is kept verbatim as the strategy's title; the Java class
 name is derived from it (`"RSI reversion"` → `RSIreversion`). The optional keyword picks the data
 source, and maps to the base class you would otherwise have extended (ticker, kline or funding-rate
-— see *Strategy base classes* in the `qtsurfer-java-strategy` skill).
+— see *Strategy base classes* in the `qtsurfer-java-strategy` skill). There is no `ticker` keyword:
+the default is written with nothing after the name.
+
+**A ticker window has `price` and nothing else.** `open`, `high`, `low`, `close` and `volume` are the
+fields of a bar, so a file that reads any of them is a `kline` strategy and its header says so:
+`strategy "Breakout" kline`. Without the keyword they are unknown names
+(`cannot find symbol: variable close`). The ticker the engine receives has open, high and low too, but
+those are the exchange's 24-hour rolling statistics, not the window's, and QTScript does not expose them.
 
 `kline` never takes an interval: the bar width is not part of the strategy. You choose it when you
 prepare the data for a run — the `cadence` of the prepare request: `1s` (the default) up to `1q`, the same labels as for
