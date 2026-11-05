@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.2.2
+  version: 1.2.3
 ---
 
 # QTSurfer QTScript Strategy
@@ -307,8 +307,9 @@ their bare name, like any other indicator.
   indicator 'adx'`, reported on the line of the call. The builder's own names (`ema`, `rsi` and the rest of the list
   above) are never pro.
 - `pro` is the only set there is. `uses` is a reserved word: a file cannot have a `param` or a section called `uses`.
-- Pro indicators read whole bars, so use them in a `kline` strategy. On a `ticker` strategy the values are not
-  the bar's and mean nothing, and validating or running the strategy returns an engine notice that says so.
+- Eleven of the twelve pro indicators read whole bars, so use them in a `kline` strategy. On a `ticker` strategy their
+  values are not the bar's and mean nothing, and validating or running the strategy returns an engine notice that says
+  so. `kurtosis` is the exception: it reads the close, so it means something on a `ticker` strategy and raises no notice.
 - A pro line is an ordinary `setup:` line: one call per line, with a window after it as usual.
 - Backtests, sweeps (walk-forward included), validation (`POST /strategy/{id}/validate`) and live runs run the pro
   indicators.

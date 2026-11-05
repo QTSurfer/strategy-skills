@@ -100,7 +100,7 @@ add up. A plan without them can register the strategy but not run it (`402`).
 
 Eleven of the twelve read whole bars, not a single value, so they belong in a `kline` strategy: on a `ticker` strategy their
 values are not the bar's and mean nothing. `kurtosis` is the exception, since it reads one value, the price of the group (the
-close on a kline).
+close on a kline), so it means something on a `ticker` strategy and raises no notice.
 
 ### Trend
 
