@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed 🩹
 
+- **`qtsurfer-qtscript-strategy` 1.2.3 and `qtsurfer-java-strategy`: `kurtosis` is the one pro indicator that does not read
+  whole bars.** The skills said that the pro indicators read whole bars and mean nothing on a `ticker` strategy, all twelve
+  of them. Eleven do, and the engine answers with a notice when they run on a `ticker` strategy; `kurtosis` reads the close,
+  so it means something there and raises no notice. The QTScript skill (`SKILL.md`, `references/examples.md` and
+  `references/indicators.md`) and the Java skill (`references/indicators.md`) now say so, in the words of the contract.
+
 - **`qtsurfer-qtscript-strategy` 1.2.2: a ticker window has `price` and nothing else.** The header section said the
   keyword picks the data source, and the bar's fields were listed for `kline` in a table further down. Agents still wrote
   `close`, `high` or `low` in a strategy with no keyword, which the compiler answers with `cannot find symbol: variable
