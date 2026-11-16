@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added ✨
+
+- **`qtsurfer-qtscript-strategy` 1.3.0 and `qtsurfer-java-strategy` 1.5.0: a strategy is told when a source is attached to its live
+  run or detached from it.** A live run can start with no market-data source and wait, and have sources attached and
+  detached by its owner while it runs. The QTScript skill has a new section on `onAttach { }` and `onDetach { }` (the
+  `$context` accessors, what is and is not in scope, when each runs and when `onDetach` does not) and the Java skill a
+  matching "Attached and detached sources" section on the `onAttach(StrategyContext)` and `onDetach(StrategyContext)`
+  methods of `Strategy`, with the same contract and the same example in each language, in the words of the contract.
+
 ### Fixed 🩹
 
 - **`qtsurfer-qtscript-strategy` 1.2.3 and `qtsurfer-java-strategy`: `kurtosis` is the one pro indicator that does not read

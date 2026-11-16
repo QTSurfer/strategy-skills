@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.4.0
+  version: 1.5.0
 ---
 
 # QTSurfer Java Strategy
@@ -429,6 +429,62 @@ implementing the interface is what makes `POST /live/{runId}/commands` do anythi
 A QTScript strategy implements it too, through its own `onCommand { }` section (see the
 `qtsurfer-qtscript-strategy` skill) — the platform recognizes the generated class as
 `CommandRequestHandler` the same way it recognizes this one.
+
+## Attached and detached sources
+
+A live run can start with no market-data source and wait, and have one attached, detached and attached again by its owner
+(`POST` and `DELETE /live/{runId}/attachments`). A strategy is told of each through two methods of `Strategy`, empty unless
+you override them:
+
+```java
+import com.wualabs.qtsurfer.engine.strategy.StrategyContext;
+
+public class Watcher extends AbstractKlineStrategy {
+
+    private final Set<String> watching = new HashSet<>();
+
+    @Override
+    public void onAttach(StrategyContext context) {
+        for (int i = 0; i < context.getInstrumentCount(); i++) {
+            watching.add(context.getInstrument(i));
+        }
+    }
+
+    @Override
+    public void onDetach(StrategyContext context) {
+        for (int i = 0; i < context.getInstrumentCount(); i++) {
+            watching.remove(context.getInstrument(i));
+        }
+    }
+}
+```
+
+`StrategyContext` is immutable. It carries the attachment's `getId()`, `getExchange()` and `getSegment()` (`""` for a venue
+without segments); `getVenueType()` (the enum `VenueType`: `CEX`, `DEX`) and `getType()` (the enum `MarketDataSource`:
+`Ticker`, `KLine`, `FundingRate`), with `getVenueTypeName()` (`"cex"` or `"dex"`) and `getTypeName()` (`"ticker"`,
+`"kline"` or `"funding"`) as the same values in text; `getInstrumentCount()`, `getInstrument(int)` (the symbol),
+`hasInstrument(String)` and `instrumentList()`; `isWarmingUp()`; and `getReason()`, never `null`: `""` on an attach and, on
+a detach, one of `REASON_OWNER`, `REASON_REFUSED`, `REASON_POOL_GONE`, `REASON_CAPACITY` or `REASON_FUNDS` (as text:
+`"OWNER"`, ...). A source dropped for lack of data, and a `dex` pool of a pair the run already reads, arrive as
+`REASON_REFUSED`.
+
+Both methods run on the same thread as `update()`, right before the first market event of the new source (or, for a
+detach, before the first event the run no longer reads), so they see the strategy's state exactly as it was at that point
+and can call anything `update()` can, an `emitBuy`/`emitSell` included. A signal emitted while `isWarmingUp()` is true is
+dropped, like any signal about replayed time. A `RuntimeException` they throw is caught and counted, as in `update()`.
+
+Indicators of a new instrument start empty: a source attached with `warmFrom` replays that many seconds of the feed to the
+strategy before its first live event, as at start, and `isWarmingUp()` tells you it is coming. The strategy's memory
+(fields, a `StateStore`) lasts while the run has at least one source attached; when the last one is detached it is
+released, and the next attach starts clean. A backtest calls `onAttach` once before its first event, with its own source,
+and `onDetach` once after its last, also when it ends before its data does (cancelled, out of time or failed).
+
+`onDetach` runs when a source is detached while the run goes on: by the owner, or by the platform, with the reason that
+says why. It does **not** run when the run stops or fails: a stop is not a point in the run's data, so nothing a hook
+emitted then could be tied to the events the run had read. To act before a run ends, closing its open positions for
+instance, send it a command (see "Receiving commands" above) and stop the run once the command has been applied.
+
+A QTScript strategy does the same with `onAttach { }` and `onDetach { }` — see the `qtsurfer-qtscript-strategy` skill.
 
 ## Signal emission
 
