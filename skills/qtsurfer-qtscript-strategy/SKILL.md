@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.2.3
+  version: 1.3.0
 ---
 
 # QTSurfer QTScript Strategy
@@ -167,6 +167,62 @@ always a plain string and is transient, exactly as in Java — see "Receiving co
 something a restarted replica actually starts from. `getStateStore(...)` here is not about durability —
 it is how `onCommand` reaches the per-instrument state a window body already reads, since a command
 carries no instrument of its own.
+
+## `onAttach { }` and `onDetach { }` — a source attached or detached, optional
+
+```qtscript
+strategy "Pump watcher" kline
+
+onAttach {
+  if ($context.getInstrumentCount() > 0) {
+    getStateStore($context.getInstrument(0)).set("watching");
+  }
+}
+
+onDetach {
+  if ("OWNER".equals($context.getReason()) && $context.getInstrumentCount() > 0) {
+    getStateStore($context.getInstrument(0)).set("released");
+  }
+}
+```
+
+A live run can start with no market-data source and wait, and have sources attached and detached by its owner while it
+runs (`POST` and `DELETE /live/{runId}/attachments`). `onAttach { }` and `onDetach { }` are how a QTScript strategy is told:
+at most one of each per file, plain Java, run once per attach or detach rather than once per market event. Like
+`onCommand { }` they are not windows: no period, no indicator. A run started with a source gets its first `onAttach`
+before its first market event; a run that waits has none until a source is attached.
+
+Inside either body `$context` is the attachment, with these accessors and nothing else:
+
+| Accessor | Returns |
+|---|---|
+| `$context.getId()` | the attachment's id, a `String` |
+| `$context.getVenueTypeName()` | `"cex"` or `"dex"` |
+| `$context.getExchange()`, `$context.getSegment()` | `String`s (`getSegment()` is `""` for a venue without segments) |
+| `$context.getTypeName()` | `"ticker"`, `"kline"` or `"funding"` |
+| `$context.getInstrumentCount()`, `$context.getInstrument(i)` | how many instruments the attachment reads, and the `i`th as a symbol |
+| `$context.hasInstrument("BTC/USDT")` | whether it reads that instrument |
+| `$context.isWarmingUp()` | whether the attachment has a warm-up to replay (`warmFrom` above `0`) |
+| `$context.getReason()` | never `null`: `""` in `onAttach`; in `onDetach` one of `"OWNER"`, `"REFUSED"`, `"POOL_GONE"`, `"CAPACITY"` or `"FUNDS"`. A source dropped for lack of data, and a `dex` pool of a pair the run already reads, arrive as `"REFUSED"` |
+
+Compare with `"OWNER".equals($context.getReason())`, which reads the same whatever the value. As in `onCommand`, nothing a
+window body has (`actual`, `$indicator`, `value(...)`, the ambient `store`) is in scope, because the attachment is not one
+instrument already chosen for you; every `param` is readable and settable, `getStateStore("<symbol>")` reaches an
+instrument's store, and the signal calls that take a symbol work. A signal emitted from either body while
+`$context.isWarmingUp()` is true is dropped, like any signal about replayed time.
+
+The strategy's memory (a `param` you changed, a `StateStore`) lasts while the run has at least one source attached; when
+the last one is detached it is released, and the next attach starts clean. A backtest calls `onAttach` once before its
+first event, with its own source, and `onDetach` once after its last, also when it ends before its data does (cancelled,
+out of time or failed).
+
+`onDetach` runs when a source is detached while the run goes on: by the owner, or by the platform, with the reason that
+says why. It does **not** run when the run stops or fails: a stop is not a point in the run's data, so nothing a hook
+emitted then could be tied to the events the run had read. To act before a run ends, closing its open positions for
+instance, send it a command (see `onCommand { }` above) and stop the run once the command has been applied.
+
+A Java strategy overrides the same two methods of `Strategy` — see "Attached and detached sources" in the
+`qtsurfer-java-strategy` skill.
 
 ## `instruments` — which markets, optional
 
