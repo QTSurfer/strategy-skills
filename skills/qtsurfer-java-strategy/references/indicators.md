@@ -170,11 +170,10 @@ indicators.getReadOnly("ema9").ifPresent(src ->
 The pro indicators come with the Pro and Elite plans. In Java they are the methods of
 `Pro`, in `com.wualabs.qtsurfer.engine.indicators.pro`: `Pro.on(indicators)` takes the indicator group that `setupIndicators`
 receives, and each call registers one pro indicator with the same names, forms and ids as the
-table under "The pro indicators: `uses`" in the `qtsurfer-qtscript-strategy` skill lists (`adx`, `cmf`,
-`garmanKlass`, `ichimoku`, `kurtosis`, `mfi`, `obv`, `parkinson`, `rogersSatchell`, `superTrend`, `vwap`, `yangZhang`). `Pro.on(indicators).adx(14)` registers `adx14` and, beside it,
+table under "The pro indicators: `uses`" in the `qtsurfer-qtscript-strategy` skill lists, one for each of the 76 factories of `Pro`. `Pro.on(indicators).adx(14)` registers `adx14` and, beside it,
 `adx14PlusDI` and `adx14MinusDI`. A window goes on the main one (`adx14`), and the listener reads the others by name.
 
-Eleven of the twelve read whole bars (`kurtosis` reads the close), so use them in a kline strategy. This one buys when the ADX
+Thirty-six of the seventy-six read whole bars (the table in the `qtsurfer-qtscript-strategy` skill says which), so use them in a kline strategy. This one buys when the ADX
 says there is a trend and the plus line is above the minus line, and sells when it is below:
 
 ```java
@@ -224,9 +223,9 @@ public class AdxTrend extends AbstractKlineStrategy {
 }
 ```
 
-On a `ticker` strategy a pro indicator is not refused. For the eleven that read whole bars the values are not the bar's and
-mean nothing, and validating or running the strategy returns an engine notice that says so; `kurtosis` reads the close, so it
-means something there and raises no notice.
+On a `ticker` strategy a pro indicator is not refused. For the thirty-six that read whole bars the values are not the bar's and
+mean nothing, and validating or running the strategy returns an engine notice that says so; the other forty read the close,
+so they mean something there and raise no notice.
 
 Registering a strategy that uses them is accepted on every plan, and the answer of `POST /strategy` carries
 `requires: ["indicators.pro"]`. Running it on a plan that does not include them is refused with `402`, when validating it,

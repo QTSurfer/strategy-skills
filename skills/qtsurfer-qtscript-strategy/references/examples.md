@@ -190,8 +190,8 @@ setup:
 
 ## 9. Pro indicators: bands and a cloud (kline)
 
-`uses pro.*` brings in the twelve pro indicators. Eleven of them read whole bars and so belong in a `kline` strategy
-(`kurtosis` reads the close). This one uses bands and a cloud: a window on `superTrend` or `ichimoku` attaches to the main
+`uses pro.*` brings in all seventy-six pro indicators. Thirty-six of them read whole bars and so belong in a `kline` strategy
+(the last column of the table in [SKILL.md](../SKILL.md) says which). This one uses bands and a cloud: a window on `superTrend` or `ichimoku` attaches to the main
 line, and the body reads the others with `value($indicator + "…")`. Running it needs the Pro or Elite plan; on another
 plan the answer is a `402`.
 
