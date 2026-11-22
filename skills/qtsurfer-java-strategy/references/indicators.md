@@ -28,7 +28,7 @@ Default indicator name (when `name` is omitted) is the method name + parameters,
 
 ## Averages, statistics and volatility
 
-Free, on the same builder. Called with no name of their own they register the name in the comment.
+On the same builder. Called with no name of their own they register the name in the comment.
 
 ```java
 .wma(5)                                // weighted moving average → "wma5"
@@ -45,7 +45,7 @@ Free, on the same builder. Called with no name of their own they register the na
 ```
 
 `atr` reads whole bars, like the pro indicators do: use it in a kline strategy. On a ticker strategy its values are not
-the bar's and mean nothing. `wma` and `atr` are builder methods, free on every plan; there is no `Pro` call for either.
+the bar's and mean nothing. `wma` and `atr` are builder methods; there is no `Pro` call for either.
 
 ## Oscillators & momentum
 
@@ -66,23 +66,32 @@ the bar's and mean nothing. `wma` and `atr` are builder methods, free on every p
 ## Rate of change & distance
 
 ```java
-.percentChange("price")                // % change tick-over-tick
-.rateChange("price")                   // absolute rate of change
-.rateChange("rc", "price", true)      // percent=true
-.distanceMa("ema9")                   // % distance from MA
-.distance("gap", "ema9", "ema21")     // % distance between two indicators
+.percentChange("pc", "price")          // change from the update before, in percent: 10 is 10%
+.rateChange("rc", "price", false)      // the same as a fraction of |previous|: 0.1 is 10%
+.rateChange("rp", "price", true)       // percent=true: the same as percentChange
+.distanceMa("ema9")                    // 100 * (price - ma) / ma → "distema9"
+.distance("gap", "ema9", "ema21")      // 100 * (a - b) / b
 ```
+
+`rateChange` and `percentChange` look one update back, with no period, and give 0 on the first update and when the previous
+value is 0. With no name of their own both register `chg` + the indicator (`chgprice`), and the second one registered
+replaces the first, so give each a name. A ticker strategy already registers `chg`, the exchange's own percent change.
+`distanceMa` takes an SMA, an EMA or an MMA, and refuses any other indicator.
 
 ## Gain / loss / extremes
 
 ```java
-.gain("price")                         // consecutive gain periods
-.loss("price")                         // consecutive loss periods
-.gain("g", "price", false)            // resetPeriodsOnSustain=false
-.max("price")                          // running max
-.min("price")                          // running min
-.sum("vol")                            // running sum
+.gain("price")                         // the rise since the update before, or 0 → "_gainprice", hidden
+.loss("price")                         // the fall since the update before, as a positive number, or 0 → "_lossprice", hidden
+.gain("g", "price", false)             // resetPeriodsOnSustain=false: a flat update keeps the streak
+.max("price")                          // the highest since the start → "maxprice"
+.min("price")                          // the lowest since the start → "minprice"
+.sum("vol")                            // the total since the start → "sumvol"
 ```
+
+`gain` and `loss` give an amount, not a count. The count of consecutive rises or falls is `getPeriodCount()` of their
+`GainRTIndicator` or `LossRTIndicator`. `max`, `min` and `sum` have no window, and over another indicator they include the
+values it gives while it warms up: the `min` of an RSI is 0 from the start.
 
 ## Arithmetic
 
@@ -230,8 +239,8 @@ describes.
 ## Advanced indicator catalogue (statistics & pro)
 
 Beyond the fluent builder methods above, the engine ships ~150 indicator classes across two tiers,
-one sub-package per category: `com.wualabs.qtsurfer.engine.indicators.<category>` for the **free**
-tier (`averages`, `momentum`, `distance`, `bollinger`, `statistics`, …) and
+one sub-package per category: `com.wualabs.qtsurfer.engine.indicators.<category>` for the indicators of every
+plan (`averages`, `momentum`, `distance`, `bollinger`, `statistics`, …) and
 `com.wualabs.qtsurfer.engine.indicators.<category>.pro` for the **pro** tier
 (`averages.pro`, `trend.pro`, `momentum.pro`, `volatility.pro`, `volume.pro`, `statistics.pro`, …) —
 a `pro` package segment is always the pro-tier marker. Pro classes come with the Pro and Elite plans, and are
@@ -242,7 +251,7 @@ class with `.add("name", new XxxRTIndicator(...))`, then read with `indicators.g
 compiles, and the strategy is registered on every plan; what a plan without the pro indicators cannot do is run it (see
 "The pro indicators" above). The check reads the compiled strategy, so any mention of a `pro` class counts: an import
 that the code uses, a cast, a field, a signature. The example below shows the shape of the call; its last line is pro, the
-others are free.
+others are not.
 
 ```java
 import com.wualabs.qtsurfer.engine.indicators.statistics.StandardDeviationRTIndicator;
@@ -259,33 +268,32 @@ indicators
 
 Constructors vary per class — most take `(int periods)` and/or `(RTIndicator source, int periods)`;
 some (lombok-built) differ, so check the class. The classes by category, with the package each lives in (under
-`com.wualabs.qtsurfer.engine.indicators`) — Trend, Volume, and performance Ratios are **pro-only today**, the free tier has
-no indicator in those categories yet. The name of a class is the one in the table plus `RTIndicator`
-(`Sma` is `SmaRTIndicator`); the same short name can exist in a free and in a pro package (`StandardDeviation`,
+`com.wualabs.qtsurfer.engine.indicators`) — Trend, Volume, and performance Ratios are **pro only**. The name of a class is the one in the table plus `RTIndicator`
+(`Sma` is `SmaRTIndicator`); the same short name can exist both in a pro package and outside one (`StandardDeviation`,
 `Variance`), so import the one in the package you mean:
 
 | Category | Tier | Package | `*RTIndicator` classes |
 |---|---|---|---|
-| Moving averages | Free | `averages` | `Sma`, `Ema`, `Wma`, `WmaIncremental`, `Hma`, `Kama`, `Tema`, `Mma` |
+| Moving averages |  | `averages` | `Sma`, `Ema`, `Wma`, `WmaIncremental`, `Hma`, `Kama`, `Tema`, `Mma` |
 | Moving averages | Pro | `averages.pro` | `Alma`, `Dema`, `Envelopes`, `Frama`, `LeastSquaresMovingAverage`, `McGinleyDynamic`, `Smma` |
-| Bands | Free | `bollinger` | `BollingerBandWidth`, `BollingerBands`, `BollingerPercentB` |
-| Oscillators | Free | `momentum` | `Rsi`, `Macd`, `StochasticRsi`, `Cci` |
+| Bands |  | `bollinger` | `BollingerBandWidth`, `BollingerBands`, `BollingerPercentB` |
+| Oscillators |  | `momentum` | `Rsi`, `Macd`, `StochasticRsi`, `Cci` |
 | Oscillators | Pro | `momentum.pro` | `AcceleratorOscillator`, `AdaptiveFisherTransform`, `AwesomeOscillator`, `BalanceOfPower`, `BullBearPower`, `ChandeForecastOscillator`, `Cmo`, `ConnorsRsi`, `CoppockCurve`, `DetrendedPriceOscillator`, `FisherTransform`, `KnowSureThing`, `Momentum`, `RelativeVigorIndex`, `Roc`, `StochasticOscillator`, `Trix`, `TrueStrengthIndex`, `UltimateOscillator`, `WilliamsR` |
-| Statistics | Free | `statistics` | `StandardDeviation`, `Variance` |
+| Statistics |  | `statistics` | `StandardDeviation`, `Variance` |
 | Statistics | Pro | `statistics.pro` | `Autocorrelation`, `Beta`, `Correlation`, `Covariance`, `HurstExponent`, `Kurtosis`, `LinearRegressionSlope`, `RollingPercentile`, `SimpleLinearRegression`, `Skewness`, `StandardDeviation`, `ValueAtRisk`, `Variance`, `ZScore` |
-| Volatility | Free | `volatility` | `Atr` |
-| Volatility | Free | `helpers` | `Volatility`, `PercentVolatility` |
+| Volatility |  | `volatility` | `Atr` |
+| Volatility |  | `helpers` | `Volatility`, `PercentVolatility` |
 | Volatility | Pro | `volatility.pro` | `ChoppinessIndex`, `KeltnerChannel`, `MassIndex`, `Natr`, `RelativeVolatilityIndex` |
 | Volatility (estimators) | Pro | `statistics.pro.volatility` | `EwmaVolatility`, `GarmanKlassVolatility`, `ParkinsonVolatility`, `RealizedVolatility`, `RogersSatchellVolatility`, `YangZhangVolatility` |
-| Trend | Pro only | `trend.pro` | `Adx`, `Aroon`, `ChandeKrollStop`, `ChandelierExit`, `DonchianChannel`, `EfficiencyRatio`, `Ichimoku`, `ParabolicSar`, `SuperTrend`, `Vortex` |
-| Volume | Pro only | `volume.pro` | `Adl`, `ChaikinOscillator`, `Cmf`, `EaseOfMovement`, `ElderForceIndex`, `KlingerOscillator`, `Mfi`, `NegativeVolumeIndex`, `Obv`, `Pvt`, `Vwap` |
-| Ratios (performance) | Pro only | `statistics.pro.ratios` | `CalmarRatio`, `InformationRatio`, `MaxDrawdown`, `OmegaRatio`, `SharpeRatio`, `SortinoRatio`, `TailRatio`, `TreynorRatio`, `UlcerIndex` |
-| Distance and change | Free | `distance` | `Distance`, `DistanceFromMa` |
-| Distance and change | Free | `helpers` | `RateChange`, `PercentChangePeriod` |
-| Counting and extremes | Free | `helpers` | `Gain`, `Loss`, `Max`, `Min`, `Count` |
-| Counting and extremes | Free | `numeric` | `Sum` |
-| Derived (the builder registers them) | Free | `numeric` | `BiFunction`, `Clamp`, `ClampPredicate`, `Conditional`, `Predicate`, `Round` |
-| Derived (the builder registers them) | Free | `helpers` | `PredicatePeriodCounter` |
+| Trend | Pro | `trend.pro` | `Adx`, `Aroon`, `ChandeKrollStop`, `ChandelierExit`, `DonchianChannel`, `EfficiencyRatio`, `Ichimoku`, `ParabolicSar`, `SuperTrend`, `Vortex` |
+| Volume | Pro | `volume.pro` | `Adl`, `ChaikinOscillator`, `Cmf`, `EaseOfMovement`, `ElderForceIndex`, `KlingerOscillator`, `Mfi`, `NegativeVolumeIndex`, `Obv`, `Pvt`, `Vwap` |
+| Ratios (performance) | Pro | `statistics.pro.ratios` | `CalmarRatio`, `InformationRatio`, `MaxDrawdown`, `OmegaRatio`, `SharpeRatio`, `SortinoRatio`, `TailRatio`, `TreynorRatio`, `UlcerIndex` |
+| Distance and change |  | `distance` | `Distance`, `DistanceFromMa` |
+| Distance and change |  | `helpers` | `RateChange`, `PercentChangePeriod` |
+| Counting and extremes |  | `helpers` | `Gain`, `Loss`, `Max`, `Min`, `Count` |
+| Counting and extremes |  | `numeric` | `Sum` |
+| Derived (the builder registers them) |  | `numeric` | `BiFunction`, `Clamp`, `ClampPredicate`, `Conditional`, `Predicate`, `Round` |
+| Derived (the builder registers them) |  | `helpers` | `PredicatePeriodCounter` |
 
 Compose them by feeding one indicator's read-only view into another's `(RTIndicator, …)` constructor
 (e.g. a `ZScore` of an `Sma`). This is how to do rolling stats / aggregation **without
@@ -321,7 +329,7 @@ public class MyIndicator implements RTIndicator {
 Register it like any built-in: `indicators.add("myInd", new MyIndicator())`. The interface is
 small: `getValue()` (current output), `update(double)` (incremental, per tick), `isReady()`
 (warmup gate, default `true`), `reset()`. `update(Number)` / `update(RTIndicator)` and `ro()`
-(read-only view) come as default methods for free.
+(read-only view) come as default methods.
 
 ### Rich indicators (full snapshot access)
 

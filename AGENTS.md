@@ -27,7 +27,7 @@ for what goes inside a body:
 skills/qtsurfer-qtscript-strategy/
   SKILL.md                    <- the language (header, param, init, instruments, setup:, windows, store, onCommand)
   references/examples.md      <- complete .qtscript strategies, one per data source
-  references/indicators.md    <- the indicators QTScript can call, free and pro
+  references/indicators.md    <- the indicators QTScript can call, pro ones included
   references/laboratory.md    <- QTScript in the Laboratory, in the browser: what runs there
 ```
 
