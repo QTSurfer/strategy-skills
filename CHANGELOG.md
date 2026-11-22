@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.4.0 and `qtsurfer-java-strategy` 1.5.2: `uses pro.*` brings in all seventy-six pro indicators.**
+  The QTScript skill had a table of twelve; it now has the table of the contract, with a row for each of the seventy-six: its forms,
+  the indicator it registers and the others registered beside it, and whether it reads whole bars (thirty-six do) or the close
+  (forty). It also says what the boolean at the end of five oscillators (`knowSureThing`, `acceleratorOscillator`,
+  `awesomeOscillator`, `relativeVigorIndex`, `stochasticOscillator`) does: `true` keeps the discrete averages. The counts in the
+  references of both skills say seventy-six, thirty-six and forty where they said twelve, eleven and one, and the skills no longer
+  call the builder's indicators "free": the pro ones are the only ones marked. All in the words of the contract.
+
 - **`qtsurfer-qtscript-strategy` 1.3.0 and `qtsurfer-java-strategy` 1.5.0: a strategy is told when a source is attached to its live
   run or detached from it.** A live run can start with no market-data source and wait, and have sources attached and
   detached by its owner while it runs. The QTScript skill has a new section on `onAttach { }` and `onDetach { }` (the

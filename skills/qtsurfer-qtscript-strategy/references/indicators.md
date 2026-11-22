@@ -7,7 +7,8 @@ call by its bare name, like `ema(20)` or `atr(14)`.
   This file does not repeat them.
 - The names that are not pro work on every plan. There are 39.
 - **Pro** names come with the Pro and Elite plans and need a `uses` line (see "The pro indicators: `uses`" in
-  [SKILL.md](../SKILL.md), which has their forms and the names they register). There are 12.
+  [SKILL.md](../SKILL.md), which has their forms and the names they register). There are 76; the sections below describe twelve of them, and
+  that table lists all 76.
 - Called without a name of its own, an indicator registers a name made from its own and its parameters: `rsi(14)` registers
   `rsi14`, `ema(9)` registers `ema9`, `wma(5)` registers `wma5`. Where the name is not that obvious, the notes give it.
 - A name that is on neither list, and a pro name whose `uses` line is missing, is rejected as `unknown indicator '<name>'`.
@@ -95,12 +96,13 @@ call by its bare name, like `ema(20)` or `atr(14)`.
 
 ## The pro indicators
 
-A `uses` line brings them in: `uses pro.adx, pro.obv` for those two, `uses pro.*` for all twelve, and several `uses` lines
+A `uses` line brings them in: `uses pro.adx, pro.obv` for those two, `uses pro.*` for all seventy-six, and several `uses` lines
 add up. A plan without them can register the strategy but not run it (`402`).
 
-Eleven of the twelve read whole bars, not a single value, so they belong in a `kline` strategy: on a `ticker` strategy their
-values are not the bar's and mean nothing. `kurtosis` is the exception, since it reads one value, the price of the group (the
-close on a kline), so it means something on a `ticker` strategy and raises no notice.
+Thirty-six of the seventy-six read whole bars, not a single value, so they belong in a `kline` strategy: on a `ticker` strategy
+their values are not the bar's and mean nothing. The other forty read one value, the price of the group (the close on a
+kline), so they mean something on a `ticker` strategy and raise no notice. The last column of the table in
+[SKILL.md](../SKILL.md) says which are which.
 
 ### Trend
 

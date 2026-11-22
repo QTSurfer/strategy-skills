@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.5.1
+  version: 1.5.2
 ---
 
 # QTSurfer Java Strategy
@@ -87,7 +87,7 @@ protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
 }
 ```
 
-See [references/indicators.md](references/indicators.md) for the full indicator catalogue. It is the up-to-date list of which indicators exist, free and pro, and what each one computes: check it before writing a call, and before telling anyone that an indicator does not exist.
+See [references/indicators.md](references/indicators.md) for the full indicator catalogue. It is the up-to-date list of which indicators exist, the pro ones included, and what each one computes: check it before writing a call, and before telling anyone that an indicator does not exist.
 
 The pro indicators (ADX, SuperTrend, Ichimoku, VWAP and the rest) are on the same builder through
 `Pro.on(indicators)`, and come with the Pro and Elite plans; "The pro indicators" in the catalogue has the call, an
