@@ -18,6 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed 🩹
 
+- **`qtsurfer-java-strategy` 1.5.1 and `qtsurfer-qtscript-strategy` 1.3.1: the catalogues say what the change, gain and extreme
+  indicators compute.** `gain` and `loss` give an amount and keep the streak in `getPeriodCount()`, and their default names are
+  hidden. `rateChange` is a fraction over one update and `percentChange` the same in percent, under one default name, so each
+  needs a name of its own. `distance` and `distanceMa` are percentages, and `distanceMa` takes an SMA, an EMA or an MMA. `max`,
+  `min` and `sum` run from the start and include the warm-up of their source. In `references/patterns.md` the noise-filtering
+  chain named an indicator it never registered and fed a read-only view, and the streak pattern read the size of a gain as a
+  count: both are corrected. The catalogues label the pro indicators only, and give the others no tier.
+
 - **`qtsurfer-qtscript-strategy` 1.2.3 and `qtsurfer-java-strategy`: `kurtosis` is the one pro indicator that does not read
   whole bars.** The skills said that the pro indicators read whole bars and mean nothing on a `ticker` strategy, all twelve
   of them. Eleven do, and the engine answers with a notice when they run on a `ticker` strategy; `kurtosis` reads the close,
