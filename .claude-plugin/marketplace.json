@@ -13,7 +13,7 @@
       "name": "qtsurfer-java-strategy",
       "source": "./skills/qtsurfer-java-strategy",
       "description": "Write, review, and debug QTSurfer Java trading strategies — AbstractTickerStrategy, indicator builder, window listeners, state management, and advanced patterns",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "author": {
         "name": "QTSurfer"
       },
@@ -31,7 +31,7 @@
       "name": "qtsurfer-qtscript-strategy",
       "source": "./skills/qtsurfer-qtscript-strategy",
       "description": "Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — beta: a compact strategy language whose braced bodies are plain Java",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "author": {
         "name": "QTSurfer"
       },

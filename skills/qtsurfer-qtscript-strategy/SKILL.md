@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.5.0
+  version: 1.5.1
 ---
 
 # QTSurfer QTScript Strategy
@@ -670,6 +670,26 @@ Your Java, plus what is already in scope:
 
 Every `param` is readable by name, and nothing needs importing: the packages a strategy is allowed
 to use are already in scope.
+
+### Signals with fields, and `var`
+
+`emitInfo(key, values…)` covers a key and a few values. A signal with named fields is built, filled and emitted. In `onAttach { }` and
+`onDetach { }` the instrument is the attachment's, so you hand it over (`$context.getInstrument(0)` is its symbol,
+`$context.instrumentList().get(0)` the `Instrument` that `createInfoStrategySignal` takes):
+
+```qtscript
+onAttach {
+  var signal = createInfoStrategySignal($context.instrumentList().get(0));
+  signal.set("event", "attached");
+  signal.set("attachment", $context.getId());
+  emitSignal(signal);
+}
+```
+
+Write `var`, here and for anything else a body only holds on to (an indicator, a value read from a store): the type is whatever the
+call returns, and nothing has to name it. A body has no import line, so spelling a type by hand would mean its whole package path
+(`com.wualabs.qtsurfer.engine…`), which is noise and breaks the day the class moves to another package. A window body does not need
+any of this for a plain note: `emitInfo(key, values…)` already knows its instrument.
 
 ### Keeping state between windows: `store`
 

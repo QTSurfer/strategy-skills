@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.6.0
+  version: 1.6.1
 ---
 
 # QTSurfer Java Strategy
@@ -522,15 +522,14 @@ For non-trading strategies that emit **computed fields** (analytics, metrics) ra
 buy/sell, build an `InfoStrategySignal` and attach arbitrary key/values, then `emitSignal`.
 The type is in `com.wualabs.qtsurfer.engine.strategy.event.signal`, next to `BuySignal` and `SellSignal`, and a
 strategy that names it imports it from there — `import com.wualabs.qtsurfer.engine.strategy.event.signal.InfoStrategySignal;`.
-`emitInfo(key, values…)` never names the type and needs no import. Two constructors, matching the `emitBuy`
-convention:
+`emitInfo(key, values…)` never names the type and needs no import, and neither does `var signal = createInfoStrategySignal(...)`:
+the type is whatever the call returns, so write `var` and leave the import out, as the two examples below do. Two constructors,
+matching the `emitBuy` convention:
 
 - **Top-level strategy (`update()`) — `createInfoStrategySignal(instrument)`**, instrument explicit:
 
 ```java
-import com.wualabs.qtsurfer.engine.strategy.event.signal.InfoStrategySignal;
-
-InfoStrategySignal signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
+var signal = createInfoStrategySignal(instrument);  // from AbstractTickerStrategy
 signal.set("interval", "1m");
 signal.set("zscore", z);
 signal.set("vwap", vwap);
@@ -540,7 +539,7 @@ emitSignal(signal);
 - **Inside a window listener (`AbstractWindowListener.onChange`) — `createInfoSignal()`**, instrument implicit:
 
 ```java
-InfoStrategySignal signal = createInfoSignal();  // listener knows its instrument
+var signal = createInfoSignal();  // listener knows its instrument
 signal.set("interval", "1m");
 signal.set("zscore", z);
 signal.set("vwap", vwap);

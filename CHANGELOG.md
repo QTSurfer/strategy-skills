@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.5.1 and `qtsurfer-java-strategy` 1.6.1: build a signal with `var`, never with a qualified class name.**
+  The QTScript skill listed `emitSignal(signal)` but never showed how to build a signal with fields inside a body, and a body has no
+  import line, so the way out was the whole package path of the type. It now has a short section, "Signals with fields, and `var`", with
+  the `onAttach` example, and the Java skill writes its two `InfoStrategySignal` examples with `var` and no import. Nothing about the
+  platform changes: this is how the examples are written.
+
 - **`qtsurfer-qtscript-strategy` 1.5.0 and `qtsurfer-java-strategy` 1.6.0: the instrument of a `dex` attach, a strategy that leaves a
   source, `$globalStore`, and the Connors RSI smoothing.** A `dex` source attaches with the pair its pool's candles carry (`Rocco/WETH`),
   and `onAttach` runs when the pool delivers its first candle, or at once with a stand-in instrument when the attach says
