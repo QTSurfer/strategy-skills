@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.5.2
+  version: 1.6.0
 ---
 
 # QTSurfer Java Strategy
@@ -294,6 +294,12 @@ throws.
 
 ## State management
 
+The strategy also has a **global store** for state that belongs to no single instrument: `getStateStore()` with no argument returns it
+(never `null`, never an `Optional`), and a listener that extends `AbstractWindowListener` reaches the same store with `getGlobalState()`.
+It is a namespace of its own, a key set in one is never seen through the other, and it is memory like any `StateStore`. The platform binds
+it when it starts the strategy: read it from a listener, `update()`, `handle(CommandRequest)`, `onAttach` or `onDetach`, not from the
+constructor. QTScript writes it as `$globalStore`.
+
 `StateStore` is per-instrument and shared by every listener on that instrument's indicator group
 (one store, not one per window). It's created lazily — a window nobody listens to never touches
 it. Inside a window listener it arrives as `onChange`'s first parameter; outside a listener (e.g.
@@ -464,9 +470,22 @@ without segments); `getVenueType()` (the enum `VenueType`: `CEX`, `DEX`) and `ge
 `Ticker`, `KLine`, `FundingRate`), with `getVenueTypeName()` (`"cex"` or `"dex"`) and `getTypeName()` (`"ticker"`,
 `"kline"` or `"funding"`) as the same values in text; `getInstrumentCount()`, `getInstrument(int)` (the symbol),
 `hasInstrument(String)` and `instrumentList()`; `isWarmingUp()`; and `getReason()`, never `null`: `""` on an attach and, on
-a detach, one of `REASON_OWNER`, `REASON_REFUSED`, `REASON_POOL_GONE`, `REASON_CAPACITY` or `REASON_FUNDS` (as text:
+a detach, one of `REASON_OWNER`, `REASON_REFUSED`, `REASON_POOL_GONE`, `REASON_CAPACITY`, `REASON_FUNDS` or `REASON_STRATEGY` (as text:
 `"OWNER"`, ...). A source dropped for lack of data, and a `dex` pool of a pair the run already reads, arrive as
 `REASON_REFUSED`.
+
+For a `dex` source the attachment reads one instrument, the pair the pool's candles carry (`Rocco/WETH`): `getInstrument(0)` is
+its symbol and `instrumentList().get(0)` the `Instrument`, which `createInfoStrategySignal` takes. `onAttach` runs when the pool
+delivers its first candle, just before it (the live execution guide, "The instrument of a pool"). Attached with
+`resolveInstrument: false`, it runs at once and the instrument is a stand-in, `<address>/<exchange>:<segment>`; `onDetach` then
+carries the pair if the pool delivered one. Pair the two methods by `getId()`, the same in both. A symbol does not identify a
+token: every signal of a `dex` run carries the contract as `instrument.id`.
+
+A strategy that has finished with a source asks the platform to detach it (the live execution guide, "A strategy that leaves a
+source"): `detach(Instrument)` ends the source that reads the instrument; `detach(StrategyContext)`, called from `onAttach` or
+`onDetach`, ends the attachment the context describes, by its id; in a window listener, `detach()` ends the source of the window's
+instrument. The request is applied before the next event and `onDetach` is told `REASON_STRATEGY`; a backtest ignores it. Called from
+`onDetach`, `detach` is allowed and does nothing: the source is already going.
 
 Both methods run on the same thread as `update()`, right before the first market event of the new source (or, for a
 detach, before the first event the run no longer reads), so they see the strategy's state exactly as it was at that point

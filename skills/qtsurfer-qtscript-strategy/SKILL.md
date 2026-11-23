@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.4.0
+  version: 1.5.0
 ---
 
 # QTSurfer QTScript Strategy
@@ -203,7 +203,20 @@ Inside either body `$context` is the attachment, with these accessors and nothin
 | `$context.getInstrumentCount()`, `$context.getInstrument(i)` | how many instruments the attachment reads, and the `i`th as a symbol |
 | `$context.hasInstrument("BTC/USDT")` | whether it reads that instrument |
 | `$context.isWarmingUp()` | whether the attachment has a warm-up to replay (`warmFrom` above `0`) |
-| `$context.getReason()` | never `null`: `""` in `onAttach`; in `onDetach` one of `"OWNER"`, `"REFUSED"`, `"POOL_GONE"`, `"CAPACITY"` or `"FUNDS"`. A source dropped for lack of data, and a `dex` pool of a pair the run already reads, arrive as `"REFUSED"` |
+| `$context.getReason()` | never `null`: `""` in `onAttach`; in `onDetach` one of `"OWNER"`, `"REFUSED"`, `"POOL_GONE"`, `"CAPACITY"`, `"FUNDS"` or `"STRATEGY"`. A source dropped for lack of data, and a `dex` pool of a pair the run already reads, arrive as `"REFUSED"` |
+
+For a `dex` source the attachment reads one instrument, the pair the pool's candles carry (`Rocco/WETH`), and `onAttach` runs
+when the pool delivers its first candle, just before it (the live execution guide, "The instrument of a pool"). Attached with
+`resolveInstrument: false`, `onAttach` runs at once and `$context.getInstrument(0)` is a stand-in,
+`<address>/<exchange>:<segment>`; `onDetach` then carries the pair if the pool delivered one. Pair the two hooks by
+`$context.getId()`, the same in both. A symbol does not identify a token: every signal of a `dex` run carries the contract as
+`instrument.id`.
+
+`detach();` asks the platform to detach a source, because the strategy has finished with it (the live execution guide, "A strategy
+that leaves a source"): in a window body it ends the source that reads the instrument the window is about; in `onAttach { }` it
+ends the attachment the hook is told of (`detach();` is the same as `detach($context);`); in `onDetach { }` it may be called and does
+nothing, the source is already going. The request is applied before the next event and the strategy's `onDetach` is told
+`"STRATEGY"`; a backtest ignores it.
 
 Compare with `"OWNER".equals($context.getReason())`, which reads the same whatever the value. As in `onCommand`, nothing a
 window body has (`actual`, `$indicator`, `value(...)`, the ambient `store`) is in scope, because the attachment is not one
@@ -352,6 +365,24 @@ The value indicators are registered for you, before your lines: `price` on ticke
 close) plus `open`, `high`, `low`, `close` and `volume` on kline; `rate` on funding — where there is
 no price at all, only the rate.
 
+## The global store: `$globalStore`
+
+`store` is one instrument's. State that belongs to the strategy as a whole (a count across every instrument, a flag that a command sets)
+goes in `$globalStore`: one store for the strategy, the same object in every window of every instrument and in the hooks. It is in
+scope in a window body, in `onCommand { }`, in `onAttach { }` and in `onDetach { }`, and it is a namespace of its own: a key set through
+it is never seen through `store` or `getStateStore("<symbol>")`. It is not in scope in `init { }` or `instruments { }` (a compile error
+says so), and it is memory: a restart empties it.
+
+```
+setup:
+  rsi(14) window m5 {
+    if (actual < 30 && !$globalStore.is("long")) {
+      $globalStore.set("long");
+      emitBuy(price);
+    }
+  }
+```
+
 ## The pro indicators: `uses`
 
 The pro indicators are not in the list above. A file brings them in with a `uses` line, and then calls them in `setup:` by
@@ -391,7 +422,7 @@ their bare name, like any other indicator.
 | `choppinessIndex` | `choppinessIndex()` · `choppinessIndex(String)` · `choppinessIndex(int)` · `choppinessIndex(String, int)` | `chop14` |  | bars |
 | `cmf` | `cmf()` · `cmf(int)` · `cmf(String, int)` | `cmf20` |  | bars |
 | `cmo` | `cmo()` · `cmo(String)` · `cmo(int)` · `cmo(String, int)` | `cmo14` |  | close |
-| `connorsRsi` | `connorsRsi()` · `connorsRsi(String)` · `connorsRsi(int, int, int)` · `connorsRsi(String, int, int, int)` | `crsi3_2_100` |  | close |
+| `connorsRsi` | `connorsRsi()` · `connorsRsi(String)` · `connorsRsi(int, int, int)` · `connorsRsi(String, int, int, int)` · `connorsRsi(String, int, int, int, boolean)` | `crsi3_2_100` |  | close |
 | `coppockCurve` | `coppockCurve()` · `coppockCurve(String)` · `coppockCurve(int, int, int)` · `coppockCurve(String, int, int, int)` | `coppock14_11_10` |  | close |
 | `dema` | `dema(int)` · `dema(String, int)` | `dema14`, from `dema(14)` (no form without arguments) |  | close |
 | `detrendedPriceOscillator` | `detrendedPriceOscillator()` · `detrendedPriceOscillator(String)` · `detrendedPriceOscillator(int)` · `detrendedPriceOscillator(String, int)` | `dpo20` |  | close |
@@ -456,7 +487,8 @@ is the one the call written there registers.
 
 Five of them, `knowSureThing`, `acceleratorOscillator`, `awesomeOscillator`, `relativeVigorIndex` and `stochasticOscillator`, smooth with
 moving averages by default. Their form with a `boolean` at the end keeps the discrete averages instead when the value is `true`, and `false`
-is the default. `connorsRsi` counts, in its percent rank, only the values strictly less than the current one.
+is the default. `connorsRsi` smooths its two RSIs with Wilder's averages by default; its form with a `boolean` at the end takes Cutler's simple averages instead when
+the value is `true`, and `false` is the default. In its percent rank it counts only the values strictly less than the current one.
 
 The `double` of the four volatility estimators is the annualization factor. With other arguments the name follows the same
 pattern: `mfi(20)` registers `mfi20`, `kurtosis(30)` registers `kurt30`, `ichimoku(7, 22, 44)` registers `ichi7_22_44`, and
@@ -629,6 +661,7 @@ Your Java, plus what is already in scope:
 | `actual`, `prev` | the window's new value and the one it had when the previous window closed |
 | `$indicator` | the name of the indicator this window is attached to, as a `String` |
 | `store` | the per-instrument `StateStore`, shared by every window of that instrument |
+| `$globalStore` | the strategy's own `StateStore`, for what belongs to no single instrument (see "The global store") |
 | `price` (ticker), `price open high low close volume` (kline), `rate` (funding) | the current values, as plain variables |
 | `value("name")` | any other indicator's current value |
 | `emitBuy(price)`, `emitSell(price)`, `emitInfo(key, values…)`, `emitSignal(signal)` | signal emission |
