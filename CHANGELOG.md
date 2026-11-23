@@ -9,6 +9,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.5.0 and `qtsurfer-java-strategy` 1.6.0: the instrument of a `dex` attach, a strategy that leaves a
+  source, `$globalStore`, and the Connors RSI smoothing.** A `dex` source attaches with the pair its pool's candles carry (`Rocco/WETH`),
+  and `onAttach` runs when the pool delivers its first candle, or at once with a stand-in instrument when the attach says
+  `resolveInstrument: false`; every signal of a `dex` run carries the contract as `instrument.id`. A strategy can end a source by itself
+  with `detach()` (QTScript: in a window, `onAttach` or `onDetach`; Java: `detach(instrument)`, `detach(context)`, or `detach()` in a
+  window listener): the platform applies it before the next event, the attachment ends `DETACHED` with the reason `STRATEGY`, and a call
+  from `onDetach` does nothing. The strategy's global store, `$globalStore` in QTScript and `getStateStore()` with no argument in Java, is
+  a namespace apart from the `store` of an instrument. `connorsRsi` smooths its two RSIs with Wilder's averages by default and has a form
+  with a `boolean` at the end that takes Cutler's simple averages (its values change from before). All in the words of the contract
+  (0.128.63 to 0.128.66).
+
 - **`qtsurfer-qtscript-strategy` 1.4.0 and `qtsurfer-java-strategy` 1.5.2: `uses pro.*` brings in all seventy-six pro indicators.**
   The QTScript skill had a table of twelve; it now has the table of the contract, with a row for each of the seventy-six: its forms,
   the indicator it registers and the others registered beside it, and whether it reads whole bars (thirty-six do) or the close
