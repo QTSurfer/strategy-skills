@@ -112,6 +112,9 @@ values it gives while it warms up: the `min` of an RSI is 0 from the start.
 .lessOrEqual("le", "price", 50000)
 .equal("eq", "price", 100)
 .notEqual("ne", "price", 100)
+.isLessThan("oversold", "rsi14", 30)   // a condition a listener reads with isValue("oversold"); also isEqual,
+                                         // isNotEqual, isGreatThan, isGreatOrEqual, isLessOrEqual (name, indicator, number)
+.isTrue("calm", "rsi14", v -> v > 40 && v < 60)   // the same, from a function
 .predicate("custom", "price", v -> v > 0 && v < 100)
 .periodCount("cnt", "oversold", v -> v > 0)  // count consecutive true periods
 ```

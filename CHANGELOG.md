@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.6.0 and `qtsurfer-java-strategy` 1.7.0: conditions, `isEqual` to `isLessOrEqual`, and `isValue`.**
+  A comparison that a body reads as true or false is written on a `setup:` line with `isEqual`, `isNotEqual`, `isGreatThan`,
+  `isGreatOrEqual`, `isLessThan` or `isLessOrEqual` (the name it registers, the indicator it reads, the number), and read with
+  `isValue("name")`, `false` until the indicator has a value. The QTScript skill lists the six names and their forms and has a section
+  "A condition: `isValue`" with a complete strategy; the Java skill has the same section for `setupIndicators` and
+  `AbstractWindowListener`, and `isTrue`, which takes a function, stays Java-only.
+
 - **`qtsurfer-qtscript-strategy` 1.5.1 and `qtsurfer-java-strategy` 1.6.1: build a signal with `var`, never with a qualified class name.**
   The QTScript skill listed `emitSignal(signal)` but never showed how to build a signal with fields inside a body, and a body has no
   import line, so the way out was the whole package path of the type. It now has a short section, "Signals with fields, and `var`", with

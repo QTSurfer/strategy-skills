@@ -93,6 +93,7 @@ call by its bare name, like `ema(20)` or `atr(14)`.
 | `clamp` | An indicator held to a range | |
 | `round` | An indicator rounded to a number of decimals | |
 | `equal`, `notEqual`, `greatThan`, `greatOrEqual`, `lessThan`, `lessOrEqual` | An indicator compared with a number, as a boolean indicator | The five-argument forms choose between two indicators: `equal("selected", "signal", 1, "emaFast", "emaSlow")` gives `emaFast` while `signal` equals 1 and `emaSlow` otherwise |
+| `isEqual`, `isNotEqual`, `isGreatThan`, `isGreatOrEqual`, `isLessThan`, `isLessOrEqual` | An indicator compared with a number, as a condition that a body reads with `isValue("name")` | Three arguments: the name it registers, the indicator it reads, the number. `isValue` is `false` until the indicator it reads has a value. `isTrue`, which takes a function, is Java only |
 
 ## The pro indicators
 

@@ -3,7 +3,7 @@ name: qtsurfer-qtscript-strategy
 description: Write, review, and debug QTSurfer strategies in QTScript (.qtscript) — a compact strategy language, currently in beta, whose braced bodies are plain Java. Use when writing a strategy as sections (strategy, param, init, instruments, uses, setup:, windows, onCommand) instead of a Java class, or when reading QTScript compile and run-time errors, on the platform or in the QTSurfer Laboratory, which runs QTScript in the browser. For the full Java strategy API — the indicator catalogue, listeners, state and signals used inside every body — see the qtsurfer-java-strategy skill.
 license: Apache-2.0
 metadata:
-  version: 1.5.1
+  version: 1.6.0
 ---
 
 # QTSurfer QTScript Strategy
@@ -293,7 +293,7 @@ lines.
 `add` `bollinger` `bollingerBandwidth` `cci` `clamp` `diff` `distance` `distanceMa` `ema` `equal`
 `gain` `greatOrEqual` `greatThan` `lessOrEqual` `lessThan` `loss` `macd` `max` `min` `mul` `notEqual`
 `percentChange` `rateChange` `round` `rsi` `sma` `stochRsi` `sum` `wma` `tema` `hma` `mma` `kama` `stdDev` `variance`
-`volatility` `percentVolatility` `bollingerPercentB` `atr`
+`volatility` `percentVolatility` `bollingerPercentB` `atr` `isEqual` `isNotEqual` `isGreatThan` `isGreatOrEqual` `isLessThan` `isLessOrEqual`
 
 These are the forms of each name that a QTScript line can write: a `String` is the name of an indicator, either one it
 reads or the one it registers, and a `Number` is a whole number or a decimal. What each argument means is in the Javadoc of
@@ -340,11 +340,19 @@ the builder, `InstrumentGroupRTIndicator`.
 | `percentVolatility` | `percentVolatility(int)` · `percentVolatility(String, int)` |
 | `bollingerPercentB` | `bollingerPercentB()` · `bollingerPercentB(int)` · `bollingerPercentB(int, Number)` · `bollingerPercentB(String, int, Number)` |
 | `atr` | `atr()` · `atr(int)` · `atr(String, int)` |
+| `isEqual` | `isEqual(String, String, Number)` |
+| `isNotEqual` | `isNotEqual(String, String, Number)` |
+| `isGreatThan` | `isGreatThan(String, String, Number)` |
+| `isGreatOrEqual` | `isGreatOrEqual(String, String, Number)` |
+| `isLessThan` | `isLessThan(String, String, Number)` |
+| `isLessOrEqual` | `isLessOrEqual(String, String, Number)` |
 
 A call whose arguments match none of them is rejected with the forms that do exist: `ema(1, 2, 3)` answers that its forms are `ema(int)`,
 `ema(String, int)` and `ema(String, String, int)`. The methods that take a function (`predicate`, `fun`, `decorate`,
-`periodCount`) and `conditional`, which takes a function and indicators as objects, can only be written in Java. To
-compare an indicator with a number, use `equal`, `notEqual`, `greatThan`, `greatOrEqual`, `lessThan` or `lessOrEqual`.
+`periodCount`, `isTrue`) and `conditional`, which takes a function and indicators as objects, can only be written in Java. To
+compare an indicator with a number, use `equal`, `notEqual`, `greatThan`, `greatOrEqual`, `lessThan` or `lessOrEqual`. To read the
+comparison as true or false inside a `{ }` body, use `isEqual`, `isNotEqual`, `isGreatThan`, `isGreatOrEqual`, `isLessThan` or
+`isLessOrEqual`: see "A condition: `isValue`".
 
 Called with no name of its own, the newer ones register `atr14`, `wma5`, `tema4`, `hma6`, `mma7`, `kama10_2_30`,
 `stdDev5`, `variance5`, `vol5` (`volatility`), `pvol5` (`percentVolatility`) and `pctB20_2` (`bollingerPercentB`); a whole
@@ -664,12 +672,43 @@ Your Java, plus what is already in scope:
 | `$globalStore` | the strategy's own `StateStore`, for what belongs to no single instrument (see "The global store") |
 | `price` (ticker), `price open high low close volume` (kline), `rate` (funding) | the current values, as plain variables |
 | `value("name")` | any other indicator's current value |
+| `isValue("name")` | whether an indicator has a value that is not 0, `false` until it has one (see "A condition: `isValue`") |
 | `emitBuy(price)`, `emitSell(price)`, `emitInfo(key, values…)`, `emitSignal(signal)` | signal emission |
 | `indicators`, `instrument`, `strategy` | the listener's own fields |
 | `getPrevInstant()`, `getCurrInstant()`, `getEngineVersion()` | the closing window's boundaries, the running engine |
 
 Every `param` is readable by name, and nothing needs importing: the packages a strategy is allowed
 to use are already in scope.
+
+### A condition: `isValue`
+
+A comparison that a body reads as true or false is written on a `setup:` line with `isEqual`, `isNotEqual`, `isGreatThan`,
+`isGreatOrEqual`, `isLessThan` or `isLessOrEqual`. Each takes three arguments: the name it registers, the indicator it reads, and
+the number it compares with. `isLessThan("oversold", "rsi14", 30)` registers `oversold`, which holds while `rsi14` is below 30.
+
+In a body, `isValue("oversold")` is `true` when the condition holds and `false` when it does not. It is `false` too until `rsi14` has
+a value, and in that stretch `value("oversold")` can already read 1: read a condition with `isValue`. `isValue` takes the name of
+any indicator, not only a condition, and is `true` when the indicator has a value and that value is not 0.
+
+```qtscript
+strategy "Oversold touch"
+
+setup:
+  rsi(14)
+  isLessThan("oversold", "rsi14", 30)
+  window oversold m1 {
+    if (isValue("oversold") && !store.is("long")) {
+      store.set("long");
+      emitBuy(price);
+    }
+    if (!isValue("oversold") && store.is("long")) {
+      store.unset("long");
+      emitSell(price);
+    }
+  }
+```
+
+`isTrue`, which takes a function, can only be written in Java: see "Conditions and `isValue`" in the Java skill.
 
 ### Signals with fields, and `var`
 
