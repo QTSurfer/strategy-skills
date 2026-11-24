@@ -3,7 +3,7 @@ name: qtsurfer-java-strategy
 description: Write, review, and debug QTSurfer Java trading strategies — classes extending a strategy base class (AbstractTickerStrategy, AbstractKlineStrategy, or AbstractFundingRateStrategy). Use when configuring indicators, window listeners, or per-instrument state, or submitting a strategy to backtest via the MCP server.
 license: Apache-2.0
 metadata:
-  version: 1.6.1
+  version: 1.7.0
 ---
 
 # QTSurfer Java Strategy
@@ -199,6 +199,7 @@ public class MyStrategy extends AbstractTickerStrategy {
 - `emitBuy(price)` / `emitSell(price)` / `emitSignal(signal)`
 - `getPrevInstant()` / `getCurrInstant()` — when the window that just fired opened / closed
 - `getEngineVersion()` / `getEngineVersionMajor()` / `getEngineVersionMinor()` — the running engine version (see [Engine version](#engine-version))
+- `isValue(name)` — whether an indicator has a value that is not 0, `false` until it has one: how a listener reads a condition (see [Conditions and `isValue`](#conditions-and-isvalue))
 - `this.instrument` — current instrument
 - `this.indicators` — indicator group
 
@@ -291,6 +292,60 @@ the same store every listener on this instrument shares (see [State management](
 below); `getPrevInstant()`/`getCurrInstant()` only resolve when the listener is registered on a
 window (via `.window(...)`, as above) — calling them on a listener attached to a plain indicator
 throws.
+
+## Conditions and `isValue`
+
+A comparison that a listener reads as true or false is written in `setupIndicators` with `isEqual`, `isNotEqual`, `isGreatThan`,
+`isGreatOrEqual`, `isLessThan` or `isLessOrEqual`. Each takes three arguments: the name it registers, the indicator it reads, and
+the number it compares with. `isLessThan("oversold", "rsi14", 30)` registers `oversold`, which holds while `rsi14` is below 30.
+`isTrue(name, indicator, predicate)` registers a condition from a function instead of a number.
+
+In an `AbstractWindowListener`, `isValue("oversold")` is `true` when the condition holds and `false` when it does not. It is `false`
+too until `rsi14` has a value, and in that stretch `indicators.getValue("oversold")` can already read 1: read a condition with
+`isValue`. `isValue` takes the name of any indicator, not only a condition, and is `true` when the indicator has a value and that
+value is not 0.
+
+```java
+import com.wualabs.qtsurfer.engine.core.state.StateStore;
+import com.wualabs.qtsurfer.engine.indicators.helpers.WindowTimeRTIndicator.WindowTime;
+import com.wualabs.qtsurfer.engine.indicators.helpers.group.InstrumentGroupRTIndicator;
+import com.wualabs.qtsurfer.engine.strategy.AbstractTickerStrategy;
+import com.wualabs.qtsurfer.engine.strategy.AbstractWindowListener;
+
+public class OversoldTouch extends AbstractTickerStrategy {
+
+    @Override
+    protected void setupIndicators(InstrumentGroupRTIndicator indicators) {
+        indicators
+            .addPrice()
+            .rsi(14)
+            .isLessThan("oversold", "rsi14", 30)
+            .isTrue("calm", "rsi14", v -> v > 40 && v < 60)
+            .window("oversold", WindowTime.m1, new Touch(this, indicators));
+    }
+
+    private class Touch extends AbstractWindowListener {
+
+        public Touch(AbstractTickerStrategy strategy, InstrumentGroupRTIndicator indicators) {
+            super(strategy, indicators);
+        }
+
+        @Override
+        public void onChange(StateStore store, double prev, double actual) {
+            if (isValue("oversold") && !store.is("long")) {
+                store.set("long");
+                emitBuy(indicators.getValue("price"));
+            }
+            if (!isValue("oversold") && store.is("long")) {
+                store.unset("long");
+                emitSell(indicators.getValue("price"));
+            }
+        }
+    }
+}
+```
+
+The same strategy in QTScript, without `isTrue`, is in "A condition: `isValue`" of the QTScript skill.
 
 ## State management
 
