@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added ✨
 
+- **`qtsurfer-qtscript-strategy` 1.6.1 and `qtsurfer-java-strategy` 1.7.1: a backtest stops where the strategy detaches, and a detach closes nothing.**
+  A strategy that asks to leave its source (`detach();` in QTScript; `detach(instrument)`, `detach(context)` or a listener's `detach()` in Java) was
+  ignored in a backtest; now a backtest, or a sweep run, stops reading there and ends `Completed` with the results of what it read, and `onDetach` is
+  told `STRATEGY`. A detach closes and cancels nothing: a strategy that takes its profit sells first and detaches after, and both skills show it.
+
 - **`qtsurfer-qtscript-strategy` 1.6.0 and `qtsurfer-java-strategy` 1.7.0: conditions, `isEqual` to `isLessOrEqual`, and `isValue`.**
   A comparison that a body reads as true or false is written on a `setup:` line with `isEqual`, `isNotEqual`, `isGreatThan`,
   `isGreatOrEqual`, `isLessThan` or `isLessOrEqual` (the name it registers, the indicator it reads, the number), and read with
